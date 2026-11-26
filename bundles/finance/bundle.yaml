@@ -1,0 +1,9 @@
+name: finance
+layer: domain
+version: 0.1.0
+description: Finance domain. Money precision, financial statement basics and terminology.
+suggests: []
+skills:
+  - local: money-precision
+  - source: anthropic-kwp
+    path: finance/skills/financial-statements
