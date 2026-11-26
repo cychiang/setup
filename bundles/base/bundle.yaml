@@ -1,0 +1,7 @@
+name: base
+layer: base
+version: 0.1.0
+description: Included in every project. The setup workbench skill and general working conventions.
+suggests: []
+skills:
+  - local: setup-workbench
