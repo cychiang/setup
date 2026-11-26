@@ -1,0 +1,82 @@
+{
+  "format_version": 1,
+  "bundles": [
+    {
+      "name": "base",
+      "version": "1.0.0",
+      "archive_sha256": "<redacted>"
+    },
+    {
+      "name": "finance",
+      "version": "1.0.0",
+      "archive_sha256": "<redacted>"
+    },
+    {
+      "name": "pdf-reports",
+      "version": "1.0.0",
+      "archive_sha256": "<redacted>"
+    }
+  ],
+  "files": [
+    {
+      "path": ".agents/skills/money/SKILL.md",
+      "sha256": "1408a110403a4b247e0db20c1462c458c7093a15a6fdc37a7db70c7633f715e3",
+      "bundle": "finance"
+    },
+    {
+      "path": ".agents/skills/pdf/SKILL.md",
+      "sha256": "1b42feefb1f27382d2fa754acb0eb28ab701bc1a7dc32188425cbc73c9fc614a",
+      "bundle": "pdf-reports"
+    },
+    {
+      "path": ".agents/skills/workbench/SKILL.md",
+      "sha256": "35cdcb34794fc70969a8a4329cb0fd49ae9d7ce096dfbd15aa80c5fb2188e177",
+      "bundle": "base"
+    },
+    {
+      "path": ".claude/skills/money/SKILL.md",
+      "sha256": "1408a110403a4b247e0db20c1462c458c7093a15a6fdc37a7db70c7633f715e3",
+      "bundle": "finance"
+    },
+    {
+      "path": ".claude/skills/pdf/SKILL.md",
+      "sha256": "1b42feefb1f27382d2fa754acb0eb28ab701bc1a7dc32188425cbc73c9fc614a",
+      "bundle": "pdf-reports"
+    },
+    {
+      "path": ".claude/skills/workbench/SKILL.md",
+      "sha256": "35cdcb34794fc70969a8a4329cb0fd49ae9d7ce096dfbd15aa80c5fb2188e177",
+      "bundle": "base"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "376f3cf3299e1246ce58089a0c2384d42b970d57f11da484b27a0679c3fdd438",
+      "bundle": "base"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "cfccf812ab449c3c85cf775668f42a6caa7f95a8ffb859cb2d540593dda84fd0",
+      "bundle": "finance"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "ac274f63c088587bbe2282a86e2f6f7a87b080f0eef6d246422ebcb597847114",
+      "bundle": "pdf-reports"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "376f3cf3299e1246ce58089a0c2384d42b970d57f11da484b27a0679c3fdd438",
+      "bundle": "base"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "cfccf812ab449c3c85cf775668f42a6caa7f95a8ffb859cb2d540593dda84fd0",
+      "bundle": "finance"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "ac274f63c088587bbe2282a86e2f6f7a87b080f0eef6d246422ebcb597847114",
+      "bundle": "pdf-reports"
+    }
+  ]
+}
