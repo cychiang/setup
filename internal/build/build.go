@@ -126,15 +126,32 @@ func (b *Builder) CheckNames() error {
 	return nil
 }
 
+// ExternalPolicy decides what an external scanner finding does to a Report.
+type ExternalPolicy int
+
+const (
+	// Blocking folds external findings into Findings, so a high severity one refuses the build.
+	Blocking ExternalPolicy = iota
+	// Advisory turns external findings into warnings.
+	Advisory
+)
+
 // Check validates names and pins, then scans the named bundles (all when empty).
 func (b *Builder) Check(names []string) (Report, error) {
+	rep, _, err := b.Gate(names, Blocking)
+	return rep, err
+}
+
+// Gate runs the security gate over the named bundles (all when empty) and returns
+// them resolved, so a caller that builds from them scans exactly what it uses.
+func (b *Builder) Gate(names []string, policy ExternalPolicy) (Report, []archive.Content, error) {
 	var rep Report
 	if err := b.CheckNames(); err != nil {
-		return rep, err
+		return rep, nil, err
 	}
 	allow, err := scan.LoadAllow(filepath.Join(b.Catalog.Dir, "security-allow.yaml"))
 	if err != nil {
-		return rep, err
+		return rep, nil, err
 	}
 	targets := b.Catalog.Bundles
 	if len(names) > 0 {
@@ -142,25 +159,27 @@ func (b *Builder) Check(names []string) (Report, error) {
 		for _, n := range names {
 			bd, ok := b.Catalog.Bundle(n)
 			if !ok {
-				return rep, fmt.Errorf("unknown bundle %q", n)
+				return rep, nil, fmt.Errorf("unknown bundle %q", n)
 			}
 			targets = append(targets, bd)
 		}
 	}
 	stage, err := os.MkdirTemp("", "setup-scan-")
 	if err != nil {
-		return rep, err
+		return rep, nil, err
 	}
 	defer os.RemoveAll(stage)
+	var resolved []archive.Content
 	for _, bd := range targets {
 		c, err := b.Resolve(bd)
 		if err != nil {
-			return rep, err
+			return rep, nil, err
 		}
+		resolved = append(resolved, c)
 		for _, name := range sortedKeys(c.Skills) {
 			rep.Findings = append(rep.Findings, scan.Skill(name, c.Skills[name], allow)...)
 			if err := stageSkill(stage, name, c.Skills[name]); err != nil {
-				return rep, err
+				return rep, nil, err
 			}
 		}
 		for _, s := range bd.Suggests {
@@ -171,14 +190,21 @@ func (b *Builder) Check(names []string) (Report, error) {
 	}
 	ext, missing, err := scan.RunExternal(stage)
 	if err != nil {
-		return rep, err
+		return rep, nil, err
 	}
-	rep.Findings = append(rep.Findings, ext...)
+	switch policy {
+	case Advisory:
+		for _, f := range ext {
+			rep.Warnings = append(rep.Warnings, fmt.Sprint("external scanner: ", f))
+		}
+	default:
+		rep.Findings = append(rep.Findings, ext...)
+	}
 	rep.MissingScanners = missing
 	for _, m := range missing {
 		rep.Warnings = append(rep.Warnings, fmt.Sprintf("external scanner %s not found on PATH", m))
 	}
-	return rep, nil
+	return rep, resolved, nil
 }
 
 func stageSkill(stage, name string, files tree.Tree) error {
