@@ -49,7 +49,11 @@ func SaveConfig(root string, c Config) error {
 	if err != nil {
 		return err
 	}
-	return writeAtomic(filepath.Join(root, ConfigFile), data)
+	p := filepath.Join(root, ConfigFile)
+	if old, err := os.ReadFile(p); err == nil && bytes.Equal(old, data) {
+		return nil
+	}
+	return writeAtomic(p, data)
 }
 
 // WithBase returns bundles with base first and no duplicates, the rest sorted.

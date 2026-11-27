@@ -170,13 +170,19 @@ func TestSecondInstallWritesNothing(t *testing.T) {
 	if _, err := project.Install(e.root, cfg, e.st, project.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	watched := []string{"AGENTS.md", "CLAUDE.md", "setup.lock", ".claude/skills/money/SKILL.md"}
+	if err := project.SaveConfig(e.root, cfg); err != nil {
+		t.Fatal(err)
+	}
+	watched := []string{"AGENTS.md", "CLAUDE.md", "setup.lock", project.ConfigFile, ".claude/skills/money/SKILL.md"}
 	before := map[string]time.Time{}
 	for _, w := range watched {
 		fi, _ := os.Stat(filepath.Join(e.root, w))
 		before[w] = fi.ModTime()
 	}
 	time.Sleep(20 * time.Millisecond)
+	if err := project.SaveConfig(e.root, cfg); err != nil {
+		t.Fatal(err)
+	}
 	res, err := project.Install(e.root, cfg, e.st, project.Options{})
 	if err != nil {
 		t.Fatal(err)
