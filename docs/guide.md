@@ -133,7 +133,35 @@ This writes `dist/finance-0.1.0.tar.gz` and `dist/finance-0.1.0.tar.gz.sha256`. 
 - If an external scanner is missing, the release fails. Pass `--allow-missing-scanners` to release anyway.
 - Pass `--publish` to also create a GitHub release tagged `finance/v0.1.0`, using `gh`. Projects can then use `--catalog github:cychiang/setup`.
 
-### 8. Commit the catalog
+### 8. Try edits in a project with dev mode
+
+A release is the only way to share a bundle, but you don't need one to test an edit. Point a project at your working catalog:
+
+```sh
+cd ~/Projects/my-report-project
+setup init --bundles base,finance --catalog ~/path/to/setup/bundles
+```
+
+You can run `setup link ~/path/to/setup/bundles` instead in a project that is already initialized. Any `--catalog` directory that holds `sources.yaml` or `<bundle>/bundle.yaml` enters dev mode. A directory of `.tar.gz` archives still means released bundles.
+
+While linked:
+
+- `setup update`, `add` and `remove` rebuild from the catalog in memory. Edit a skill, run `setup update`, and the project files change. A rerun with no edit writes nothing.
+- Each build runs the same security gate as a release. A high-severity finding, such as hidden Unicode, refuses the install and writes nothing. External scanners only warn.
+- Third-party skills come from the commits pinned in `sources.lock`, never the latest upstream.
+- The link is saved in `setup.local.yaml` as an absolute path. `init` and `link` add that file to `.gitignore`. `setup.yaml` and `setup.lock` never contain the path.
+- `setup.lock` marks each bundle `source: dev` with an empty `archive_sha256`. `setup check` fails while any dev bundle is in the lock, even on a clone that has no `setup.local.yaml`. `setup outdated` lists these bundles as `dev-linked`.
+- Setup only reads your catalog and never writes to it.
+
+When you are done, release the bundles and leave dev mode:
+
+```sh
+setup unlink --catalog ~/path/to/setup/dist   # or omit --catalog to use the one in setup.yaml
+```
+
+`unlink` removes `setup.local.yaml` and reinstalls every bundle from the released catalog, so the lock has no dev markers. It stops with an error when no released catalog is known. Hand edits are protected as usual, and `--force` overwrites them.
+
+### 9. Commit the catalog
 
 Commit `bundles/` so that the source registry, the pins and the bundle definitions are versioned. Don't commit `dist/`.
 
@@ -228,5 +256,6 @@ A cloud agent clones the repo into a fresh sandbox. You can set up a project for
 | `drift: <file>: modified` | A generated file was edited. Run `setup update --force` to restore it, or move the change into the bundle. |
 | `conflict (hand-edited): <file>` | `update`, `add` or `remove` refused to overwrite your edit. The fix is the same as for drift. |
 | `warning: external scanner ... not found on PATH` | Install Gitleaks or skill-scanner, or pass `--allow-missing-scanners` when you release. |
+| `dev link active: ... run \`setup unlink\`` from `setup check` | The lock has bundles built from a local catalog. Run `setup unlink --catalog <dist-or-github:owner/repo>` to reinstall released bundles. Check passes afterwards. |
 | A skill doesn't appear in the agent | Start a new session or chat. In Claude Code, `/reload-skills` also works. |
 | A skill name collision during `bundle check` or `init` | Two bundles ship a skill with the same name. Rename one of them. Names must be unique across the catalog. |

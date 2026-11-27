@@ -101,6 +101,20 @@ setup bundle add finance <REF>                        # paste a REF from the lis
 
 For the full walkthrough, which covers writing your own bundle, updates, CI and cloud agents, read [docs/guide.md](docs/guide.md).
 
+## Iterate on bundles with dev mode
+
+A released bundle only reaches a project after a release, a version bump and `setup update`. To try edits right away, link a project to your working catalog:
+
+```sh
+cd ~/Projects/my-report-project
+setup init --catalog ~/path/to/setup/bundles   # or `setup link <dir>` in an initialized project
+# edit a skill under bundles/, then:
+setup update                                   # rebuilds from your checkout
+setup unlink --catalog ~/path/to/setup/dist    # back to released bundles
+```
+
+The link lives in `setup.local.yaml`, which init adds to `.gitignore`. Dev builds run the same security gate as a release and use the third-party commits pinned in `sources.lock`. The lock marks them `source: dev`, so `setup check` fails until you run `setup unlink`, and a dev-built install can't be committed by accident. The tool only reads your catalog. Releases stay the only way to share.
+
 ## Bundles in this catalog
 
 | Bundle | Layer | What it gives the agent |

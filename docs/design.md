@@ -96,6 +96,9 @@ The released archive is the only interface between the two modes. Init mode has 
 | 22 | Releases are self-contained archives with checksums. | Init in a sandbox is one download per bundle, and upstream changes can't break it. |
 | 23 | `bundle release` runs a security gate. | Skills are text that steers agents, so they are checked before release. |
 | 24 | Init should run before the session through each agent's setup step (deferred). Init can also run mid-session and print an activation note. | Instructions and MCP changes aren't picked up mid-session. |
+| 25 | Dev mode links a project to a local source catalog. The link is stored only in the gitignored `setup.local.yaml`. | You can iterate on bundles without a release and version bump, and the public repo never receives a local path. |
+| 26 | Dev bundles are built in memory through the build code and marked `source: dev` in `setup.lock`. `setup check` fails while any exist. | A dev-built install can't pass CI or be shared by accident, even on a clone without `setup.local.yaml`. |
+| 27 | Dev builds run the release security gate. External scanners only warn. Third-party skills use the `sources.lock` pins. | Dev mode is not a way around the gate or the pins. |
 
 ### Merge rules (init mode)
 
@@ -176,7 +179,8 @@ instructions/*.md
 
 ```
 setup.yaml       # catalog location + selected bundles (+ disable list)
-setup.lock       # bundle -> version + archive sha256 + per-file hashes
+setup.lock       # bundle -> version + archive sha256 + per-file hashes (dev bundles: source dev, no sha256)
+setup.local.yaml # dev_catalog: absolute path of a linked source catalog; gitignored, never committed
 .claude/skills/<name>/...     # copies, for Claude Code
 .agents/skills/<name>/...     # copies, for Codex and Cursor
 AGENTS.md / CLAUDE.md         # managed blocks between <!-- setup:begin <bundle> --> markers
@@ -207,7 +211,9 @@ setup init --bundles base,finance[,…] [--catalog <repo|dir>] [--yes] [--json]
 setup add <bundle>… | setup remove <bundle>…
 setup outdated [--json]       # exit code 1 if updates are available
 setup update [<bundle>…]
-setup check                   # CI drift gate
+setup check                   # CI drift gate; also fails while dev bundles are in the lock
+setup link <dir>              # dev mode: build bundles from a local source catalog (init --catalog <dir> does the same)
+setup unlink [--catalog <c>]  # leave dev mode, reinstall released bundles
 ```
 
 Every command is non-interactive when `--yes` is passed or when stdin is not a TTY, and every command supports `--json`. When `init` runs inside an agent session, it prints an activation note that lists the new skill and instruction paths for the agent to read now.
