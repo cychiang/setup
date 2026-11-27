@@ -127,9 +127,7 @@ func resolveSource(env Env, cfg project.Config, flagCatalog string) (resolved, e
 
 // resolveSpec ignores setup.local.yaml: a source catalog spec enters dev mode, anything else is released.
 func resolveSpec(env Env, cfg project.Config, spec string) (resolved, error) {
-	if spec == "" {
-		spec = cfg.Catalog
-	}
+	spec = catalogSpec(spec, cfg.Catalog, env.getenv)
 	cache, err := fetch.DefaultCacheDir(env.getenv)
 	if err != nil {
 		return resolved{}, err
@@ -353,13 +351,7 @@ func unlinkCmd(args []string, env Env) error {
 	if err != nil {
 		return err
 	}
-	spec := f.catalog
-	if spec == "" {
-		spec = cfg.Catalog
-	}
-	if spec == "" {
-		return fmt.Errorf("no released catalog is known: %s has no catalog; pass --catalog <dir|github:owner/repo>", project.ConfigFile)
-	}
+	spec := catalogSpec(f.catalog, cfg.Catalog, env.getenv)
 	r, err := resolveSpec(env, cfg, spec)
 	if err != nil {
 		return err

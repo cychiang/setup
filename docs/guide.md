@@ -179,12 +179,20 @@ Every project gets `base`. Add the domain and type bundles the project needs, fo
 Run init from the project root:
 
 ```sh
+# from the default catalog, github:cychiang/setup
+setup init --bundles base,finance,pdf-reports
+
 # from local release archives
 setup init --bundles base,finance,pdf-reports --catalog ~/Projects/github.com/cychiang/setup/dist
-
-# from GitHub releases
-setup init --bundles base,finance,pdf-reports --catalog github:cychiang/setup
 ```
+
+You rarely need `--catalog`. The catalog is chosen in this order:
+
+1. The dev link in `setup.local.yaml`, if the project is in dev mode.
+2. `--catalog` on the command line.
+3. `catalog:` in the project's `setup.yaml`. Init records the catalog it used here.
+4. The `SETUP_CATALOG` environment variable. Set it once to use your own catalog everywhere.
+5. The built-in default, `github:cychiang/setup`.
 
 Init writes the following files:
 

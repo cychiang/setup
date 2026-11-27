@@ -19,6 +19,8 @@ type Store interface {
 	Source
 	Versions(bundle string) ([]semver.Version, error)
 	Fetch(bundle string, v semver.Version) (data []byte, sha256 string, err error)
+	// Name is the catalog spec as a user would write it, for messages.
+	Name() string
 }
 
 // Open resolves a catalog spec: `github:owner/repo` or a directory of archives.
@@ -49,7 +51,7 @@ func Latest(s Store, bundle string) (semver.Version, error) {
 		return semver.Version{}, err
 	}
 	if len(vs) == 0 {
-		return semver.Version{}, fmt.Errorf("bundle %q not found in catalog", bundle)
+		return semver.Version{}, fmt.Errorf("bundle %q has no release in catalog %s", bundle, s.Name())
 	}
 	best := vs[0]
 	for _, v := range vs[1:] {

@@ -16,6 +16,8 @@ type Dir struct{ Path string }
 
 func (d *Dir) source() {}
 
+func (d *Dir) Name() string { return d.Path }
+
 func (d *Dir) Versions(bundle string) ([]semver.Version, error) {
 	matches, err := filepath.Glob(filepath.Join(d.Path, bundle+"-*.tar.gz"))
 	if err != nil {

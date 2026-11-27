@@ -81,6 +81,8 @@ func (g *GitHub) releases() ([]release, error) {
 	}
 }
 
+func (g *GitHub) Name() string { return "github:" + g.Repo }
+
 func (g *GitHub) Versions(bundle string) ([]semver.Version, error) {
 	rs, err := g.releases()
 	if err != nil {

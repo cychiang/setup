@@ -88,6 +88,8 @@ setup check                             # prints "ok"
 
 Open Claude Code, Codex or Cursor in the project. The skills are available from the first turn.
 
+Without `--catalog`, init uses `SETUP_CATALOG` if it is set, and otherwise the built-in default `github:cychiang/setup`. Bundles must be published there with `setup bundle release <bundle> --publish` before the default works.
+
 To see which third-party skills you can add, and which bundles exist:
 
 ```sh
@@ -110,7 +112,7 @@ cd ~/Projects/my-report-project
 setup init --catalog ~/path/to/setup/bundles   # or `setup link <dir>` in an initialized project
 # edit a skill under bundles/, then:
 setup update                                   # rebuilds from your checkout
-setup unlink --catalog ~/path/to/setup/dist    # back to released bundles
+setup unlink                                   # back to released bundles (the default catalog, or --catalog <dist>)
 ```
 
 The link lives in `setup.local.yaml`, which init adds to `.gitignore`. Dev builds run the same security gate as a release and use the third-party commits pinned in `sources.lock`. The lock marks them `source: dev`, so `setup check` fails until you run `setup unlink`, and a dev-built install can't be committed by accident. The tool only reads your catalog. Releases stay the only way to share.

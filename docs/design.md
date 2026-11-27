@@ -237,3 +237,7 @@ The first test project is `stock-analysis`, initialized as `base + finance + con
 1. Whether APM resolves a dependency-only bundle into each agent's layout. If it can't, build mode resolves sources directly with git, which the design allows.
 2. Whether Cursor shows skills twice when they are written to both `.claude/skills` and `.agents/skills`.
 3. Whether a Claude Code cloud session can download from the private `setup` releases.
+
+## Catalog resolution
+
+A project's catalog is resolved in this order: the dev link in `setup.local.yaml`, then `--catalog`, then `catalog:` in `setup.yaml`, then the `SETUP_CATALOG` environment variable, then the built-in default `github:cychiang/setup`. Init records the released catalog it used in `setup.yaml`, so a project keeps its catalog when the default changes.

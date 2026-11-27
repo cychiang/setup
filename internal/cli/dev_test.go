@@ -1,10 +1,13 @@
 package cli_test
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/cychiang/setup/internal/cli"
 )
 
 type devEnv struct {
@@ -145,10 +148,16 @@ func TestUnlinkRestoresReleasedInstall(t *testing.T) {
 	for _, b := range []string{"base", "finance"} {
 		mustRun(t, e.work, "bundle", "release", b, "--out", dist, "--allow-missing-scanners")
 	}
-	if code, _, errs := run(t, e.proj, "unlink"); code == 0 || !strings.Contains(errs, "no released catalog") {
-		t.Fatalf("unlink with no released catalog: %d %s", code, errs)
+	var out, errb bytes.Buffer
+	env := cli.Env{Dir: e.proj, Out: &out, Err: &errb, Getenv: func(k string) string {
+		if k == "SETUP_CATALOG" {
+			return dist
+		}
+		return os.Getenv(k)
+	}}
+	if code := cli.Run([]string{"unlink"}, env); code != 0 {
+		t.Fatalf("unlink via SETUP_CATALOG: exit %d\n%s", code, errb.String())
 	}
-	mustRun(t, e.proj, "unlink", "--catalog", dist)
 	if exists(e.proj, "setup.local.yaml") {
 		t.Fatal("unlink must remove setup.local.yaml")
 	}
