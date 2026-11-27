@@ -65,7 +65,7 @@ The binary has no runtime dependencies.
 | `make release VERSION=v0.1.0` | Runs the tests, builds `dist/`, and publishes a GitHub release with `gh`. |
 | `make clean` | Removes `bin/` and `dist/`. |
 
-There is no hosted CI while the repo is private, which saves GitHub Actions minutes. Run `make lint test e2e` before you push. Tool releases are tagged `v0.1.0` and bundle releases `finance/v0.1.0`.
+CI runs `lint`, `test` (Linux and macOS), `vuln` and `e2e` on every pull request. Pushing a tag such as `v0.1.0` runs the tests and publishes the release archives, and `make release VERSION=v0.1.0` does the same from your machine. Bundle releases use tags like `finance/v0.1.0` and do not trigger a tool release.
 
 ## Quick start
 

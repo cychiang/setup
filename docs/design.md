@@ -132,7 +132,7 @@ install.sh            # installs a release archive after verifying its checksum
 Makefile              # build, run, test, lint, vuln, e2e, dist, install
 ```
 
-Tool releases are tagged `vX.Y.Z` and publish `setup_<version>_<os>_<arch>.tar.gz` archives plus `checksums.txt`. Bundle releases are tagged `<bundle>/vX.Y.Z`. Tool releases are published locally with `make release VERSION=vX.Y.Z`. There is no hosted CI while the repo is private, so run `make lint test e2e` before you push. CI workflows will be added back when the repo goes public.
+Tool releases are tagged `vX.Y.Z` and publish `setup_<version>_<os>_<arch>.tar.gz` archives plus `checksums.txt`. Bundle releases are tagged `<bundle>/vX.Y.Z`. CI (`.github/workflows/ci.yml`) runs lint, test, vuln and e2e on every pull request. Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, or run `make release VERSION=vX.Y.Z` locally. The release workflow runs only on tags that start with `v`, so a bundle tag never triggers it.
 
 ### Catalog (`bundles/`)
 
