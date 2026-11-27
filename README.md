@@ -62,9 +62,10 @@ The binary has no runtime dependencies.
 | `make vuln` | Runs govulncheck. |
 | `make e2e` | Replays the whole workflow against the real catalog in `bundles/`: sync, check, release, init, drift, update. Needs network access to GitHub. |
 | `make dist VERSION=v0.1.0` | Cross-compiles release archives and `checksums.txt` into `dist/`. |
+| `make release VERSION=v0.1.0` | Runs the tests, builds `dist/`, and publishes a GitHub release with `gh`. |
 | `make clean` | Removes `bin/` and `dist/`. |
 
-CI runs `lint`, `test` (Linux and macOS), `vuln` and `e2e` on every pull request. Pushing a tag such as `v0.1.0` runs the tests and publishes the release archives. Bundle releases use tags like `finance/v0.1.0` and do not trigger a tool release.
+There is no hosted CI while the repo is private, which saves GitHub Actions minutes. Run `make lint test e2e` before you push. Tool releases are tagged `v0.1.0` and bundle releases `finance/v0.1.0`.
 
 ## Quick start
 

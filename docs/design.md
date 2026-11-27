@@ -130,10 +130,9 @@ bundles/              # the catalog (below)
 scripts/              # e2e.sh, release.sh, tarball.go
 install.sh            # installs a release archive after verifying its checksum
 Makefile              # build, run, test, lint, vuln, e2e, dist, install
-.github/workflows/    # ci.yml, release.yml
 ```
 
-Tool releases are tagged `vX.Y.Z` and publish `setup_<version>_<os>_<arch>.tar.gz` archives plus `checksums.txt`. Bundle releases are tagged `<bundle>/vX.Y.Z`. The tool release workflow runs only on tags that start with `v`, so a bundle tag never triggers it.
+Tool releases are tagged `vX.Y.Z` and publish `setup_<version>_<os>_<arch>.tar.gz` archives plus `checksums.txt`. Bundle releases are tagged `<bundle>/vX.Y.Z`. Tool releases are published locally with `make release VERSION=vX.Y.Z`. There is no hosted CI while the repo is private, so run `make lint test e2e` before you push. CI workflows will be added back when the repo goes public.
 
 ### Catalog (`bundles/`)
 

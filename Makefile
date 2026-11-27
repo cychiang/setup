@@ -8,7 +8,7 @@ STATICCHECK := honnef.co/go/tools/cmd/staticcheck@v0.8.2
 GOVULNCHECK := golang.org/x/vuln/cmd/govulncheck@v1.10.0
 
 .DEFAULT_GOAL := help
-.PHONY: help build run test lint vuln e2e dist install clean
+.PHONY: help build run test lint vuln e2e dist release install clean
 
 help: ## list targets
 	@awk -F':.*## ' '/^[a-z0-9]+:.*## /{printf "  %-8s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -35,6 +35,9 @@ e2e: ## replay the full workflow against the real catalog (needs network)
 
 dist: ## cross-compile release archives into dist/, for example: make dist VERSION=v0.1.0
 	sh scripts/release.sh $(VERSION)
+
+release: test dist ## publish a GitHub release from dist/ with gh, for example: make release VERSION=v0.1.0
+	gh release create $(VERSION) dist/* --title $(VERSION) --generate-notes
 
 install: ## install setup into GOBIN with version stamping
 	go install -trimpath -ldflags '$(LDFLAGS)' ./cmd/setup
