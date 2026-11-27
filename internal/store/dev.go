@@ -46,6 +46,9 @@ func (d *Dev) Build(names []string, warn func(string)) ([]archive.Content, error
 		}
 		return nil, fmt.Errorf("dev build refused by the security gate:%s", sb.String())
 	}
+	for _, f := range rep.Findings {
+		warn(f.String())
+	}
 	return contents, nil
 }
 

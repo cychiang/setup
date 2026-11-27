@@ -190,3 +190,17 @@ func TestLinkAnInitializedProject(t *testing.T) {
 		t.Fatal("check must fail after link")
 	}
 }
+
+func TestMediumLinkFindingsAreShownButNeverBlock(t *testing.T) {
+	e := newDevEnv(t)
+	write(t, e.work, "bundles/finance/skills/money/SKILL.md", skillMD("money")+"\nSee [shared](../../SHARED.md).\n")
+
+	code, out, errs := run(t, e.work, "bundle", "check")
+	if code != 0 || !strings.Contains(out, "medium [skill-link] money/SKILL.md") {
+		t.Fatalf("bundle check: exit %d\nstdout: %s\nstderr: %s", code, out, errs)
+	}
+	code, _, errs = run(t, e.proj, "update")
+	if code != 0 || !strings.Contains(errs, "medium [skill-link] money/SKILL.md") {
+		t.Fatalf("dev update: exit %d\nstderr: %s", code, errs)
+	}
+}
