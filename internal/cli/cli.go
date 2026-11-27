@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/cychiang/setup/internal/version"
 )
 
 // Env carries everything a command touches outside its arguments, so tests can drive it.
@@ -49,6 +51,9 @@ init mode:
   add <bundle>...      remove <bundle>...
   outdated [--json]    update [<bundle>...] [--force]
   check [--json]
+
+other:
+  version              print version, commit and build date (also --version)
 `
 
 // Run executes one command line and returns the process exit code.
@@ -96,6 +101,9 @@ func dispatch(args []string, env Env) error {
 		return updateCmd(rest, env)
 	case "check":
 		return checkCmd(rest, env)
+	case "version", "--version", "-version":
+		fmt.Fprintln(env.Out, version.String())
+		return nil
 	case "help", "-h", "--help":
 		fmt.Fprint(env.Out, usage)
 		return nil

@@ -238,3 +238,12 @@ func TestDuplicateSkillNamesFailCheck(t *testing.T) {
 		t.Fatalf("%d %s", code, errs)
 	}
 }
+
+func TestVersionCommand(t *testing.T) {
+	for _, arg := range []string{"version", "--version"} {
+		out := mustRun(t, t.TempDir(), arg)
+		if !strings.HasPrefix(out, "setup ") || !strings.Contains(out, "commit") {
+			t.Fatalf("%s printed %q", arg, out)
+		}
+	}
+}
