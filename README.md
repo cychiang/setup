@@ -1,5 +1,8 @@
 # setup
 
+> [!WARNING]
+> **Experimental.** This is a personal project for exploring how to manage agent skills. Commands, file formats and bundle contents may change without notice or migration, and there is no stable release yet. Review any skill before you let an agent use it, especially third-party ones. Use at your own risk.
+
 `setup` builds reusable bundles of agent skills and installs them into projects for Claude Code, Codex and Cursor.
 
 A bundle covers one concern, such as finance knowledge or producing PDF reports. A project combines bundles, for example `base + finance + pdf-reports`. After `setup init`, any coding agent opened in the project has the skills and instructions it needs. This works for local agents and for cloud agents that only see a clone of the repo.
