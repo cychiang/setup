@@ -61,6 +61,8 @@ func (g *GitHub) get(url, accept string) ([]byte, error) {
 	return body, nil
 }
 
+func (g *GitHub) source() {}
+
 func (g *GitHub) releases() ([]release, error) {
 	var all []release
 	for page := 1; ; page++ {

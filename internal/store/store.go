@@ -9,8 +9,14 @@ import (
 	"github.com/cychiang/setup/internal/semver"
 )
 
+// Source is where a project's bundles come from. The set is closed: released
+// archives in a directory (Dir) or on GitHub (GitHub), and a local working
+// catalog built in memory (Dev).
+type Source interface{ source() }
+
 // Store lists and downloads released archives. Fetch verifies the archive against its published checksum.
 type Store interface {
+	Source
 	Versions(bundle string) ([]semver.Version, error)
 	Fetch(bundle string, v semver.Version) (data []byte, sha256 string, err error)
 }

@@ -70,10 +70,27 @@ func WithBase(bundles []string) []string {
 	return append([]string{"base"}, rest...)
 }
 
+// SourceDev marks a bundle built from a local working catalog. Its archive_sha256 is empty.
+const SourceDev = "dev"
+
 type LockBundle struct {
 	Name          string         `json:"name"`
 	Version       semver.Version `json:"version"`
 	ArchiveSHA256 string         `json:"archive_sha256"`
+	Source        string         `json:"source,omitempty"`
+}
+
+func (b LockBundle) Dev() bool { return b.Source == SourceDev }
+
+// DevBundles names the bundles in the lock that were built from a local catalog.
+func (l Lock) DevBundles() []string {
+	var out []string
+	for _, b := range l.Bundles {
+		if b.Dev() {
+			out = append(out, b.Name)
+		}
+	}
+	return out
 }
 
 // LockFile covers a whole file, or for AGENTS.md and CLAUDE.md the managed block of Bundle.
