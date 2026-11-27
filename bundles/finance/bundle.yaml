@@ -1,6 +1,6 @@
 name: finance
 layer: domain
-version: 0.1.0
+version: 0.1.1
 description: Finance domain. Money precision, financial statement basics and terminology.
 suggests: []
 skills:

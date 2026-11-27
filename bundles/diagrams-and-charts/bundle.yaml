@@ -1,6 +1,6 @@
 name: diagrams-and-charts
 layer: type
-version: 0.1.0
+version: 0.1.1
 description: Choose and draw the right visual for architecture, flows and numbers.
 suggests: []
 skills:
