@@ -7,7 +7,7 @@ trap 'rm -rf "$WORK"' EXIT
 export SETUP_HOME="$WORK/home"
 SETUP="$WORK/setup"
 ALL="base finance concise-explaining diagrams-and-charts pdf-reports"
-ALL_CSV=$(echo $ALL | tr ' ' ',')
+ALL_CSV=$(echo "$ALL" | tr ' ' ',')
 
 pass() { printf 'ok   %s\n' "$1"; }
 fail() { printf 'FAIL %s\n' "$1" >&2; exit 1; }
