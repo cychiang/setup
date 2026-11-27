@@ -16,14 +16,14 @@ A bundle covers one concern, such as finance knowledge or producing PDF reports.
  register sources, pick skills             setup init --bundles base,finance,...
  bundle check (names, pins, security)        -> download released archives
  bundle release ── finance-0.1.0.tar.gz ──▶  -> verify checksums
-                                             -> write skills + AGENTS.md / CLAUDE.md
+                                             -> write skills + AGENTS.md, CLAUDE.md
                                              -> setup.lock
 ```
 
 - **Bundles** belong to one of three layers. `base` goes into every project. A **domain** bundle holds subject knowledge, such as `finance`. A **type** bundle covers a way of working, such as `pdf-reports`. A project uses `base` plus any number of domain bundles and any number of type bundles.
 - **Skills** in a bundle are either your own or individual skills picked from registered third-party repos. Every third-party source is pinned to one commit, which all bundles share.
 - **Releases** are reproducible `.tar.gz` archives with a checksum. A security gate must pass before a release is written.
-- **Projects** get real copies of each skill in `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex and Cursor). Instructions go into managed blocks in `AGENTS.md` and `CLAUDE.md`. Everything is pinned in `setup.lock`. Commit these files, so that a fresh clone works with no install step.
+- **Projects** get real copies of each skill in `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex and Cursor). Instructions go into managed blocks in `AGENTS.md`, the single source for every agent. `CLAUDE.md` holds only an `@AGENTS.md` import, so Claude Code loads each instruction once. Everything is pinned in `setup.lock`. Commit these files, so that a fresh clone works with no install step.
 - **Nothing is written at user scope.** `setup` never touches `~/.claude`, `~/.agents` or `~/.cursor`, so projects cannot affect each other.
 
 ## Install
@@ -97,6 +97,8 @@ setup skills --source anthropic-kwp --query finance   # REF, NAME, USED BY, DESC
 setup skills --markdown > skills.md                   # full catalog as a Markdown table
 setup bundle list                                     # bundles by layer, with their skills
 setup bundle add finance <REF>                        # paste a REF from the list
+setup list                                            # bundles in the project's catalog, and which are installed
+setup list --json                                     # the same as data, for agents
 ```
 
 `setup skills` lists every skill in each pinned source plus your own local skills. `--json` gives the full data.

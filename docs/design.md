@@ -44,7 +44,7 @@ A project takes `base` plus any number of domain bundles plus any number of type
 A bundle contains:
 
 - **Skills.** These are SKILL.md folders. A skill is either one you wrote (stored in the bundle) or a reference to a skill in a registered third-party source, pinned through `sources.lock`.
-- **Instructions.** These are Markdown snippets that are compiled into AGENTS.md and CLAUDE.md.
+- **Instructions.** These are Markdown snippets that are compiled into AGENTS.md.
 - **`mcp/` and `hooks/`.** These folders are reserved. The MVP doesn't use them.
 
 A bundle never includes another bundle. A bundle can list `suggests`, which names other bundles that pair well with it (for example, `pdf-reports` suggests `diagrams-and-charts`). This is advice only: the workbench skill mentions the suggestion, and nothing is installed automatically.
@@ -99,13 +99,15 @@ The released archive is the only interface between the two modes. Init mode has 
 | 25 | Dev mode links a project to a local source catalog. The link is stored only in the gitignored `setup.local.yaml`. | You can iterate on bundles without a release and version bump, and the public repo never receives a local path. |
 | 26 | Dev bundles are built in memory through the build code and marked `source: dev` in `setup.lock`. `setup check` fails while any exist. | A dev-built install can't pass CI or be shared by accident, even on a clone without `setup.local.yaml`. |
 | 27 | Dev builds run the release security gate. External scanners only warn. Third-party skills use the `sources.lock` pins. | Dev mode is not a way around the gate or the pins. |
+| 28 | Bundle instructions live only in AGENTS.md. CLAUDE.md holds a plain `@AGENTS.md` line and no markers. | Claude Code loads CLAUDE.md in preference to AGENTS.md and expands `@path` imports, so writing blocks to both files made Claude read every instruction twice. A created CLAUDE.md is tracked whole in `setup.lock`. A CLAUDE.md the user wrote gets the line prepended once and stays untracked. One that already imports AGENTS.md is untouched. Older installs migrate on the next init or update. |
+| 29 | `setup list` shows the bundles in the project's active catalog and what is installed. | The agent proposes bundles from live catalog data, not a table baked into a skill that goes stale. Released catalogs are read from the latest manifest, so the manifest carries the description. |
 
 ### Merge rules (init mode)
 
 | Content | Rule |
 |---|---|
 | Skills | Every skill from every selected bundle is installed. Skill names must be unique across the catalog. `bundle check` enforces this, and init also rejects collisions. |
-| Instructions | Snippets are joined in layer order (base, then domains, then types, then the project's own). Each bundle's snippet goes in its own labelled block. When instructions contradict, precedence is project, then domain, then type, then base. |
+| Instructions | Snippets are joined in layer order (base, then domains, then types, then the project's own). Each bundle's snippet goes in its own labelled block of AGENTS.md. When instructions contradict, precedence is project, then domain, then type, then base. |
 | Project-level | `setup.yaml` can disable any bundle item by name, for example `disable: [finance/skills/x]`. |
 
 ### Security gate (build mode, MVP)
@@ -116,6 +118,7 @@ The released archive is the only interface between the two modes. Init mode has 
    - hidden Unicode (Cf, tag characters U+E0000–E007F, bidi overrides and isolates, variation selectors, mid-file BOM)
    - SKILL.md frontmatter validity (`name` matches the folder, `description` is present)
    - dangerous patterns (`curl … | sh`, long base64 blobs, `` !`cmd` `` lines)
+   - skill links (medium, never blocking): a relative Markdown link that leaves the skill folder or points at a missing file
 2. Gitleaks (secrets), if it is installed.
 3. Cisco skill-scanner (`--fail-on-severity high`, with no cloud options), if it is installed.
 
@@ -170,7 +173,7 @@ skills:
 The archive is named `<bundle>-<version>.tar.gz` and comes with a `.sha256` file. It is published as a GitHub Release tagged `<bundle>/v<version>`. Contents:
 
 ```
-manifest.json        # name, layer, version, suggests, skills[] with content hashes
+manifest.json        # name, layer, version, description, suggests, skills[] with content hashes
 skills/<name>/...    # fully resolved: own skills and third-party skills, ready to copy
 instructions/*.md
 ```
@@ -183,10 +186,11 @@ setup.lock       # bundle -> version + archive sha256 + per-file hashes (dev bun
 setup.local.yaml # dev_catalog: absolute path of a linked source catalog; gitignored, never committed
 .claude/skills/<name>/...     # copies, for Claude Code
 .agents/skills/<name>/...     # copies, for Codex and Cursor
-AGENTS.md / CLAUDE.md         # managed blocks between <!-- setup:begin <bundle> --> markers
+AGENTS.md                     # one managed block per bundle, between <!-- setup:begin <bundle> --> markers
+CLAUDE.md                     # `@AGENTS.md` import; whole file tracked only when setup created it
 ```
 
-Instructions are written into managed blocks, so text outside the markers is never modified. `setup check` fails if any generated file differs from what `setup.lock` describes.
+Instructions are written into managed blocks of AGENTS.md, so text outside the markers is never modified. CLAUDE.md is only the line `@AGENTS.md`. `setup check` fails if any generated file differs from what `setup.lock` describes.
 
 ## CLI (MVP)
 
@@ -209,6 +213,7 @@ Init mode:
 ```
 setup init --bundles base,finance[,…] [--catalog <repo|dir>] [--yes] [--json]
 setup add <bundle>… | setup remove <bundle>…
+setup list [--json]           # bundles in the active catalog: layer, latest version, description, skills, installed
 setup outdated [--json]       # exit code 1 if updates are available
 setup update [<bundle>…]
 setup check                   # CI drift gate; also fails while dev bundles are in the lock
