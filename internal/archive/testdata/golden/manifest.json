@@ -3,6 +3,7 @@
   "name": "finance",
   "layer": "domain",
   "version": "1.2.3",
+  "description": "Money precision and statements.",
   "suggests": [
     "pdf-reports"
   ],

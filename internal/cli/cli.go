@@ -52,6 +52,8 @@ build mode:
 init mode:
   init --bundles a,b --catalog <dir|github:owner/repo> [--yes] [--json] [--force]
   add <bundle>...      remove <bundle>...
+  list [--json] [--catalog <dir|github:owner/repo>]
+                       bundles in the project's catalog, with what is installed
   outdated [--json]    update [<bundle>...] [--force]
   check [--json]
   link <source-catalog-dir>
@@ -104,6 +106,8 @@ func dispatch(args []string, env Env) error {
 		return addCmd(rest, env)
 	case "remove":
 		return removeCmd(rest, env)
+	case "list":
+		return listCmd(rest, env)
 	case "outdated":
 		return outdatedCmd(rest, env)
 	case "link":

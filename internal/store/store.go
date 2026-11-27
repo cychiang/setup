@@ -4,6 +4,7 @@ package store
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/cychiang/setup/internal/semver"
@@ -17,6 +18,8 @@ type Source interface{ source() }
 // Store lists and downloads released archives. Fetch verifies the archive against its published checksum.
 type Store interface {
 	Source
+	// Bundles names every bundle with at least one release, sorted.
+	Bundles() ([]string, error)
 	Versions(bundle string) ([]semver.Version, error)
 	Fetch(bundle string, v semver.Version) (data []byte, sha256 string, err error)
 	// Name is the catalog spec as a user would write it, for messages.
@@ -68,4 +71,9 @@ func parseChecksum(data []byte, want string) (string, error) {
 		return "", fmt.Errorf("malformed checksum file for %s", want)
 	}
 	return fields[0], nil
+}
+
+func uniqueSorted(s []string) []string {
+	slices.Sort(s)
+	return slices.Compact(s)
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func fixture() archive.Content {
-	b := catalog.Bundle{Name: "finance", Layer: catalog.Domain, Version: semver.Version{Major: 1, Minor: 2, Patch: 3}, Suggests: []string{"pdf-reports"}}
+	b := catalog.Bundle{Name: "finance", Layer: catalog.Domain, Version: semver.Version{Major: 1, Minor: 2, Patch: 3}, Description: "Money precision and statements.", Suggests: []string{"pdf-reports"}}
 	skills := map[string]tree.Tree{
 		"money-precision": {"SKILL.md": []byte("---\nname: money-precision\ndescription: d\n---\nUse decimals.\n"), "ref/notes.md": []byte("notes\n")},
 		"comps":           {"SKILL.md": []byte("---\nname: comps\ndescription: d\n---\n")},

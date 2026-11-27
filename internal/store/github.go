@@ -83,6 +83,24 @@ func (g *GitHub) releases() ([]release, error) {
 
 func (g *GitHub) Name() string { return "github:" + g.Repo }
 
+func (g *GitHub) Bundles() ([]string, error) {
+	rs, err := g.releases()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, r := range rs {
+		name, ver, ok := strings.Cut(r.Tag, "/v")
+		if !ok {
+			continue
+		}
+		if _, err := semver.Parse(ver); err == nil {
+			names = append(names, name)
+		}
+	}
+	return uniqueSorted(names), nil
+}
+
 func (g *GitHub) Versions(bundle string) ([]semver.Version, error) {
 	rs, err := g.releases()
 	if err != nil {
