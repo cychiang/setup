@@ -84,7 +84,7 @@ The released archive is the only interface between the two modes. Init mode has 
 | 10 | Bundle selection works through flags, an inferring agent, and later a picker. All three produce explicit bundle names. | Nothing about the selection is hidden, and `setup.lock` shows what was chosen. |
 | 11 | Each bundle has its own version, for example `finance/v1.2.0`. | Bundles are released on their own schedules. |
 | 12 | The tool is separate from the catalog, and both are private for now. | Other people can use the tool with their own catalog later. |
-| 13 | One repo for now, with `tool/` and `bundles/`. | Early on the tool and the bundles change together. |
+| 13 | One repo for now. The Go module sits at the repo root next to `bundles/`. | Early on the tool and the bundles change together. |
 | 14 | Sources are pinned once for the whole catalog. | This prevents version conflicts when a project combines bundles. |
 | 15 | Search covers registered sources only. The agent proposes new sources (deferred). | Only trusted text can reach agents. |
 | 16 | Forks are updated with a copier-style three-way merge (deferred). | Most upstream edits merge cleanly, and conflicts are visible. |
@@ -96,6 +96,9 @@ The released archive is the only interface between the two modes. Init mode has 
 | 22 | Releases are self-contained archives with checksums. | Init in a sandbox is one download per bundle, and upstream changes can't break it. |
 | 23 | `bundle release` runs a security gate. | Skills are text that steers agents, so they are checked before release. |
 | 24 | Init should run before the session through each agent's setup step (deferred). Init can also run mid-session and print an activation note. | Instructions and MCP changes aren't picked up mid-session. |
+| 25 | Dev mode links a project to a local source catalog. The link is stored only in the gitignored `setup.local.yaml`. | You can iterate on bundles without a release and version bump, and the public repo never receives a local path. |
+| 26 | Dev bundles are built in memory through the build code and marked `source: dev` in `setup.lock`. `setup check` fails while any exist. | A dev-built install can't pass CI or be shared by accident, even on a clone without `setup.local.yaml`. |
+| 27 | Dev builds run the release security gate. External scanners only warn. Third-party skills use the `sources.lock` pins. | Dev mode is not a way around the gate or the pins. |
 
 ### Merge rules (init mode)
 
@@ -119,6 +122,20 @@ The released archive is the only interface between the two modes. Init mode has 
 A high-severity finding blocks the release. To suppress a finding, add an entry to `security-allow.yaml` with a written reason. The entry is tied to the skill and to its content hash, so it stops applying when the content changes. If an external scanner is missing, `check` warns, and `release` fails unless `--allow-missing-scanners` is passed.
 
 ## Files
+
+### Repository
+
+```
+go.mod, go.sum        # module github.com/cychiang/setup
+cmd/setup/            # main package
+internal/             # archive, build, catalog, cli, fetch, project, scan, store, version, ...
+bundles/              # the catalog (below)
+scripts/              # e2e.sh, release.sh, tarball.go
+install.sh            # installs a release archive after verifying its checksum
+Makefile              # build, run, test, lint, vuln, e2e, dist, install
+```
+
+Tool releases are tagged `vX.Y.Z` and publish `setup_<version>_<os>_<arch>.tar.gz` archives plus `checksums.txt`. Bundle releases are tagged `<bundle>/vX.Y.Z`. CI (`.github/workflows/ci.yml`) runs lint, test, vuln and e2e on every pull request. Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, or run `make release VERSION=vX.Y.Z` locally. The release workflow runs only on tags that start with `v`, so a bundle tag never triggers it.
 
 ### Catalog (`bundles/`)
 
@@ -162,7 +179,8 @@ instructions/*.md
 
 ```
 setup.yaml       # catalog location + selected bundles (+ disable list)
-setup.lock       # bundle -> version + archive sha256 + per-file hashes
+setup.lock       # bundle -> version + archive sha256 + per-file hashes (dev bundles: source dev, no sha256)
+setup.local.yaml # dev_catalog: absolute path of a linked source catalog; gitignored, never committed
 .claude/skills/<name>/...     # copies, for Claude Code
 .agents/skills/<name>/...     # copies, for Codex and Cursor
 AGENTS.md / CLAUDE.md         # managed blocks between <!-- setup:begin <bundle> --> markers
@@ -177,6 +195,8 @@ Build mode:
 ```
 setup source add <name> <git-url>
 setup source sync [<name>]            # fetch and re-pin in sources.lock
+setup skills [--source <n>] [--query <t>] [--json] [--markdown]   # list pickable skills with their refs
+setup bundle list [--json]
 setup bundle new <name> --layer <l>
 setup bundle add <bundle> <source>/<path> | --local <name>
 setup bundle remove <bundle> <skill>
@@ -191,7 +211,9 @@ setup init --bundles base,finance[,…] [--catalog <repo|dir>] [--yes] [--json]
 setup add <bundle>… | setup remove <bundle>…
 setup outdated [--json]       # exit code 1 if updates are available
 setup update [<bundle>…]
-setup check                   # CI drift gate
+setup check                   # CI drift gate; also fails while dev bundles are in the lock
+setup link <dir>              # dev mode: build bundles from a local source catalog (init --catalog <dir> does the same)
+setup unlink [--catalog <c>]  # leave dev mode, reinstall released bundles
 ```
 
 Every command is non-interactive when `--yes` is passed or when stdin is not a TTY, and every command supports `--json`. When `init` runs inside an agent session, it prints an activation note that lists the new skill and instruction paths for the agent to read now.
@@ -215,3 +237,7 @@ The first test project is `stock-analysis`, initialized as `base + finance + con
 1. Whether APM resolves a dependency-only bundle into each agent's layout. If it can't, build mode resolves sources directly with git, which the design allows.
 2. Whether Cursor shows skills twice when they are written to both `.claude/skills` and `.agents/skills`.
 3. Whether a Claude Code cloud session can download from the private `setup` releases.
+
+## Catalog resolution
+
+A project's catalog is resolved in this order: the dev link in `setup.local.yaml`, then `--catalog`, then `catalog:` in `setup.yaml`, then the `SETUP_CATALOG` environment variable, then the built-in default `github:cychiang/setup`. Init records the released catalog it used in `setup.yaml`, so a project keeps its catalog when the default changes.

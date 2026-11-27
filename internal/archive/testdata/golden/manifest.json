@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "name": "finance",
+  "layer": "domain",
+  "version": "1.2.3",
+  "suggests": [
+    "pdf-reports"
+  ],
+  "skills": [
+    {
+      "name": "comps",
+      "source": {
+        "name": "kwp",
+        "url": "https://example.com/kwp",
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "17f8503d5e2aa6837c7d241e2ff413a1915d89ac3a9c818a9c73d98ff724fc5f"
+        }
+      ]
+    },
+    {
+      "name": "money-precision",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "f432c75e2531d4945efa4f807586baf66c336428af5808feae9bdebc3c938b1f"
+        },
+        {
+          "path": "ref/notes.md",
+          "sha256": "444e0fffbd825e9610ff5b199485707a0c895339ae80c15cc8a8aee41b106fda"
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    {
+      "path": "rules.md",
+      "sha256": "20617ffbb88247fb17d2b724a8a6f2d06be691413035f08286763c82f95a2fa1"
+    }
+  ]
+}

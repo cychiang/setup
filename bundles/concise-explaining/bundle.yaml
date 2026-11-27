@@ -1,0 +1,7 @@
+name: concise-explaining
+layer: type
+version: 0.1.0
+description: Explain in less. Lead with the answer, use plain words, cut filler.
+suggests: []
+skills:
+  - local: concise-explaining

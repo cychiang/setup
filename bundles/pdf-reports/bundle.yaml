@@ -1,0 +1,7 @@
+name: pdf-reports
+layer: type
+version: 0.1.0
+description: Produce a structured PDF report that cites its sources, embeds charts and can be regenerated.
+suggests: [diagrams-and-charts]
+skills:
+  - local: pdf-reports
