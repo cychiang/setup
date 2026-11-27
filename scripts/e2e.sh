@@ -71,6 +71,9 @@ for dir in .claude/skills .agents/skills; do
 done
 
 expect_code 0 "check after init" "$SETUP" check
+expect_code 0 "list" "$SETUP" list --json
+grep -q '"installed": true' "$WORK/out.txt" || fail "list does not mark installed bundles"
+pass "list marks installed bundles"
 
 find . -path ./.git -prune -o -type f -exec touch -t 200001010000 {} +
 touch -t 200001010001 "$WORK/marker"
