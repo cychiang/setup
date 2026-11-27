@@ -199,7 +199,13 @@ func initCmd(args []string, env Env) error {
 	if f.bundles != "" || len(cfg.Bundles) == 0 {
 		cfg.Bundles = project.WithBase(splitList(f.bundles))
 	}
-	return installFrom(env, cfg, f.catalog, f, project.Options{})
+	if err := installFrom(env, cfg, f.catalog, f, project.Options{}); err != nil {
+		return err
+	}
+	if !project.InGitWorkTree(env.Dir) {
+		fmt.Fprintln(env.Err, "warning: this directory is not inside a git work tree. The generated files are meant to be committed; run `git init` first.")
+	}
+	return nil
 }
 
 func requireConfig(env Env) (project.Config, error) {

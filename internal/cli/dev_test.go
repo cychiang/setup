@@ -204,3 +204,25 @@ func TestMediumLinkFindingsAreShownButNeverBlock(t *testing.T) {
 		t.Fatalf("dev update: exit %d\nstderr: %s", code, errs)
 	}
 }
+
+func TestInitWarnsOutsideAGitWorkTree(t *testing.T) {
+	t.Setenv("SETUP_HOME", t.TempDir())
+	cat := t.TempDir()
+	write(t, cat, "base/bundle.yaml", "name: base\nlayer: base\nversion: 0.1.0\ndescription: d\nsuggests: []\nskills:\n  - local: workbench\n")
+	write(t, cat, "base/skills/workbench/SKILL.md", skillMD("workbench"))
+
+	bare := t.TempDir()
+	code, _, errs := run(t, bare, "init", "--catalog", cat, "--yes")
+	if code != 0 || !strings.Contains(errs, "git init") {
+		t.Fatalf("outside git: exit %d, stderr %q", code, errs)
+	}
+
+	inside := t.TempDir()
+	write(t, inside, ".git/HEAD", "ref: refs/heads/main\n")
+	nested := filepath.Join(inside, "sub")
+	os.MkdirAll(nested, 0o755)
+	code, _, errs = run(t, nested, "init", "--catalog", cat, "--yes")
+	if code != 0 || strings.Contains(errs, "git init") {
+		t.Fatalf("inside git: exit %d, stderr %q", code, errs)
+	}
+}
