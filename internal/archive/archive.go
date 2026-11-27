@@ -45,6 +45,7 @@ type Manifest struct {
 	Name          string          `json:"name"`
 	Layer         catalog.Layer   `json:"layer"`
 	Version       semver.Version  `json:"version"`
+	Description   string          `json:"description"`
 	Suggests      []string        `json:"suggests"`
 	Skills        []ManifestSkill `json:"skills"`
 	Instructions  []FileEntry     `json:"instructions"`
@@ -71,6 +72,7 @@ func Assemble(b catalog.Bundle, skills map[string]tree.Tree, sources map[string]
 		Name:          b.Name,
 		Layer:         b.Layer,
 		Version:       b.Version,
+		Description:   b.Description,
 		Suggests:      append([]string{}, b.Suggests...),
 		Skills:        []ManifestSkill{},
 		Instructions:  entries(instructions),

@@ -83,3 +83,22 @@ func ignoreLocal(root string) error {
 	}
 	return writeAtomic(p, []byte(out+LocalFile+"\n"))
 }
+
+// InGitWorkTree reports whether dir or one of its parents holds a .git entry.
+// It needs no git binary. A .git file, as in a worktree or submodule, counts.
+func InGitWorkTree(dir string) bool {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(abs, ".git")); err == nil {
+			return true
+		}
+		parent := filepath.Dir(abs)
+		if parent == abs {
+			return false
+		}
+		abs = parent
+	}
+}

@@ -44,9 +44,10 @@ if [ -n "${SETUP_RELEASE_DIR:-}" ]; then
 	[ -n "$VERSION" ] || die "VERSION is required with SETUP_RELEASE_DIR"
 else
 	if [ -z "$VERSION" ]; then
-		VERSION=$(curl_api application/vnd.github+json "$API/releases/latest" |
-			sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
-		[ -n "$VERSION" ] || die "could not determine the latest release"
+		# Bundle releases (finance/v0.1.0) share this repo, so pick the newest tool tag (vX.Y.Z), not GitHub's "latest".
+		VERSION=$(curl_api application/vnd.github+json "$API/releases?per_page=100" |
+			sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\(v[0-9][^"]*\)".*/\1/p' | head -n 1)
+		[ -n "$VERSION" ] || die "could not find a tool release (vX.Y.Z) in cychiang/setup"
 	fi
 fi
 

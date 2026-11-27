@@ -293,7 +293,7 @@ func countHigh(fs []scan.Finding) int {
 // Publish creates the GitHub release <bundle>/v<version> with the gh CLI.
 func Publish(bd catalog.Bundle, r Released) error {
 	tag := fmt.Sprintf("%s/v%s", bd.Name, bd.Version)
-	cmd := exec.Command("gh", "release", "create", tag, r.Archive, r.SumFile, "--title", tag, "--notes", bd.Description)
+	cmd := exec.Command("gh", "release", "create", tag, r.Archive, r.SumFile, "--title", tag, "--notes", bd.Description, "--latest=false")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("gh release create %s: %w: %s", tag, err, strings.TrimSpace(string(out)))
 	}

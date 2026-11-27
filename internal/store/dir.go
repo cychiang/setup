@@ -18,6 +18,27 @@ func (d *Dir) source() {}
 
 func (d *Dir) Name() string { return d.Path }
 
+func (d *Dir) Bundles() ([]string, error) {
+	matches, err := filepath.Glob(filepath.Join(d.Path, "*.tar.gz"))
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, m := range matches {
+		base := strings.TrimSuffix(filepath.Base(m), ".tar.gz")
+		for i, c := range base {
+			if c != '-' {
+				continue
+			}
+			if _, err := semver.Parse(base[i+1:]); err == nil {
+				names = append(names, base[:i])
+				break
+			}
+		}
+	}
+	return uniqueSorted(names), nil
+}
+
 func (d *Dir) Versions(bundle string) ([]semver.Version, error) {
 	matches, err := filepath.Glob(filepath.Join(d.Path, bundle+"-*.tar.gz"))
 	if err != nil {

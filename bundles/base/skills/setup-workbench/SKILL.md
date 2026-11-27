@@ -12,7 +12,8 @@ description: "Use the setup CLI from inside a project to add, remove, update and
 - `setup.yaml` lists the catalog and the selected bundles. It is the source of truth for what the project uses.
 - `setup.lock` pins each bundle to a version, an archive sha256 and per-file hashes.
 - `.claude/skills/<name>/` and `.agents/skills/<name>/` hold generated copies of each skill.
-- `AGENTS.md` and `CLAUDE.md` hold generated blocks between `<!-- setup:begin <bundle> -->` markers.
+- `AGENTS.md` holds one generated block per bundle between `<!-- setup:begin <bundle> -->` markers. It is the single source of instructions for every agent.
+- `CLAUDE.md` only imports it with an `@AGENTS.md` line. Put project rules in `AGENTS.md` outside the markers.
 
 Never edit generated skill copies or text inside the markers. `setup check` fails on any drift. Change behavior by changing bundles, or write project rules outside the markers.
 
@@ -23,6 +24,7 @@ Every command accepts `--json`. Pass `--yes` to run without prompts.
 | Command | What it does |
 |---|---|
 | `setup init --bundles base,<more> [--catalog <repo-or-dir>] --yes` | Initialize the project from the named bundles. |
+| `setup list --json` | List the bundles in the project's catalog with layer, latest version, description, skills and installed state. Works before init too. |
 | `setup add <bundle>...` | Add bundles to an initialized project. |
 | `setup remove <bundle>...` | Remove bundles and their files. |
 | `setup outdated --json` | List bundles with newer versions. Exit code 1 means updates exist. |
@@ -36,30 +38,20 @@ Use `--json` when you parse the output. Commit `setup.yaml`, `setup.lock` and ev
 The command prints an activation note listing the new SKILL.md paths and instruction files.
 
 1. Read every listed SKILL.md now. The agent loaded its skill list at session start, so new skills are invisible until you read them.
-2. Read the new instruction blocks in AGENTS.md or CLAUDE.md now and follow them for the rest of the session.
+2. Read the new instruction blocks in AGENTS.md now and follow them for the rest of the session.
 3. Tell the user that instructions and MCP changes load automatically only in the next session.
 
 ## Proposing bundles
 
 Never run `setup add` or `setup init` with bundles the user has not confirmed.
 
-1. Read `setup.yaml` to see what is already selected.
+1. Run `setup list --json`. It lists every bundle in the catalog with `layer`, `description`, `skills`, `latest_version`, `installed` and `installed_version`. Propose only bundles from this output.
 2. Look at the project and the request. Check file types, dependencies, README, data files and the words in the user's request.
-3. Map the evidence to bundles. Pick a domain bundle for the subject and a type bundle for the kind of output.
+3. Match the evidence to the descriptions and skills of bundles that are not installed. Pick a domain bundle for the subject and a type bundle for the kind of output.
 4. Propose the bundles in one message. For each one, give its name, its layer and the evidence. Include `suggests` pairings, marked as optional.
 5. Wait for the user to confirm. Then run `setup add <bundles> --yes` and follow the activation steps above.
 
-Known bundles in the MVP catalog:
-
-| Bundle | Layer | Propose when |
-|---|---|---|
-| `base` | base | Always installed. |
-| `finance` | domain | Money, prices, ledgers, invoices, statements, tickers or portfolios. |
-| `concise-explaining` | type | The user wants short answers, summaries or explanations. |
-| `diagrams-and-charts` | type | The work needs architecture or flow diagrams, or charts of numbers. |
-| `pdf-reports` | type | The deliverable is a report or PDF. Suggests `diagrams-and-charts`. |
-
-The MVP CLI has no command that lists the catalog. If the request fits none of the bundles above, say so and do the work without a bundle.
+If nothing in the list fits the request, say so and do the work without a bundle.
 
 ## Suggests
 

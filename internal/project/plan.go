@@ -10,9 +10,6 @@ import (
 	"github.com/cychiang/setup/internal/catalog"
 )
 
-// Instruction files that carry managed blocks.
-var BlockFiles = []string{"AGENTS.md", "CLAUDE.md"}
-
 // Skill roots, one per agent family. Both get real copies.
 var SkillRoots = []string{".claude/skills", ".agents/skills"}
 
@@ -26,7 +23,8 @@ type Block struct {
 	Body   string
 }
 
-// Plan is the desired tree: whole files by path and managed blocks in layer order.
+// Plan is the desired tree: whole files by path and the bundle blocks in layer
+// order. Blocks belong to AGENTS.md; CLAUDE.md's blocks are decided in Apply.
 type Plan struct {
 	Files  map[string]PlanFile
 	Blocks []Block

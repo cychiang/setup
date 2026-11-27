@@ -71,14 +71,23 @@ type step struct {
 // Apply reconciles the plan against disk and the previous lock. Nothing is
 // written when conflicts exist and force is false.
 func Apply(root string, plan Plan, old Lock, force bool) (Report, []LockFile, error) {
+	claudeOld, otherFiles := splitClaudeLock(old.Files)
+	old.Files = otherFiles
+	claudeDoc, err := readIfExists(filepath.Join(root, ClaudeFile))
+	if err != nil {
+		return Report{}, nil, err
+	}
+	claudeRest, claudeConflict, err := stripLegacy(claudeDoc, claudeOld.Legacy)
+	if err != nil {
+		return Report{}, nil, fmt.Errorf("%s: %w", ClaudeFile, err)
+	}
+	claude := desiredClaude(claudeRest, claudeOld.Owned)
 	var units []unit
 	for p, f := range plan.Files {
 		units = append(units, unit{path: p, bundle: f.Bundle, want: string(f.Data), wantHash: tree.SHA(f.Data), present: true})
 	}
 	for _, b := range plan.Blocks {
-		for _, f := range BlockFiles {
-			units = append(units, unit{path: f, bundle: b.Bundle, want: b.Body, wantHash: tree.SHA([]byte(b.Body)), present: true})
-		}
+		units = append(units, unit{path: AgentsFile, bundle: b.Bundle, want: b.Body, wantHash: tree.SHA([]byte(b.Body)), present: true})
 	}
 	oldIdx := map[string]LockFile{}
 	for _, f := range old.Files {
@@ -131,15 +140,14 @@ func Apply(root string, plan Plan, old Lock, force bool) (Report, []LockFile, er
 			steps = append(steps, step{u, remove})
 		}
 	}
+	if claudeConflict {
+		rep.Conflicts = append(rep.Conflicts, ClaudeFile)
+	}
 	if len(rep.Conflicts) > 0 && !force {
 		return rep, nil, ErrConflicts
 	}
 	rep.Conflicts = nil
 
-	order := make([]string, len(plan.Blocks))
-	for i, b := range plan.Blocks {
-		order[i] = b.Bundle
-	}
 	type blockEdit struct {
 		set    []Block
 		remove map[string]bool
@@ -173,22 +181,26 @@ func Apply(root string, plan Plan, old Lock, force bool) (Report, []LockFile, er
 			rep.Deleted = append(rep.Deleted, s.path)
 		}
 	}
+	order := make([]string, len(plan.Blocks))
+	for i, b := range plan.Blocks {
+		order[i] = b.Bundle
+	}
 	for _, f := range BlockFiles {
 		e := edits[f]
 		if e == nil {
 			continue
 		}
 		full := filepath.Join(root, f)
-		data, err := os.ReadFile(full)
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		data, err := readIfExists(full)
+		if err != nil {
 			return rep, nil, err
 		}
-		out, err := editBlocks(string(data), e.set, e.remove, order)
+		out, err := editBlocks(data, e.set, e.remove, order)
 		if err != nil {
 			return rep, nil, fmt.Errorf("%s: %w", f, err)
 		}
 		switch {
-		case out == string(data):
+		case out == data:
 		case out == "":
 			if err := os.Remove(full); err != nil {
 				return rep, nil, err
@@ -201,9 +213,33 @@ func Apply(root string, plan Plan, old Lock, force bool) (Report, []LockFile, er
 			rep.Written = append(rep.Written, f)
 		}
 	}
+	if claude.Text != claudeDoc {
+		if err := writeAtomic(filepath.Join(root, ClaudeFile), []byte(claude.Text)); err != nil {
+			return rep, nil, err
+		}
+		rep.Written = append(rep.Written, ClaudeFile)
+	}
+	if claude.Owned {
+		newLock = append(newLock, LockFile{Path: ClaudeFile, SHA256: tree.SHA([]byte(claude.Text)), Bundle: "base"})
+	}
 	sort.Strings(rep.Written)
 	sort.Strings(rep.Deleted)
+	sort.Slice(newLock, func(i, j int) bool {
+		a, b := newLock[i], newLock[j]
+		if a.Path != b.Path {
+			return a.Path < b.Path
+		}
+		return a.Bundle < b.Bundle
+	})
 	return rep, newLock, nil
+}
+
+func readIfExists(p string) (string, error) {
+	data, err := os.ReadFile(p)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	}
+	return string(data), err
 }
 
 func pruneEmpty(root, dir string) {

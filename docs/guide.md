@@ -92,7 +92,7 @@ Keep bundles small. One to three skills per bundle is a good size.
 
 ### 5. Add instructions (optional)
 
-Put short Markdown snippets in `bundles/<bundle>/instructions/*.md`. Init places each bundle's snippets in a labelled block in the project's `AGENTS.md` and `CLAUDE.md`. Don't add `setup:begin` markers yourself, because the tool writes them.
+Put short Markdown snippets in `bundles/<bundle>/instructions/*.md`. Init places each bundle's snippets in a labelled block in the project's `AGENTS.md`. Claude Code reads it through the import in `CLAUDE.md`. Don't add `setup:begin` markers yourself, because the tool writes them.
 
 ### 6. Check the catalog
 
@@ -106,6 +106,8 @@ setup bundle check finance    # one bundle
 - **Structure.** A skill name is used twice, a local skill is missing, a source isn't pinned, or a SKILL.md frontmatter is invalid.
 - **Hidden Unicode.** The file contains invisible or bidirectional characters, tag characters, variation selectors, or a byte order mark (BOM) that isn't at the start of the file.
 - **Dangerous patterns.** The file contains `curl ... | sh`, a long base64 blob, or a line starting with `` !` ``.
+
+`bundle check` also prints medium findings, which never fail the check or block a release or a dev install. A relative Markdown link or image that leaves the skill folder (such as `../../CONNECTORS.md`), or points at a file the skill does not contain, is one. It works in the source repo and breaks in an installed project. Fix the link, or suppress the finding with rule `skill-link`.
 
 If Gitleaks or skill-scanner is on your PATH, `bundle check` runs it too. When one of them is missing, `check` prints a warning.
 
@@ -202,9 +204,21 @@ Init writes the following files:
 | `setup.lock` | The version of each bundle, its archive checksum and a hash of every generated file. |
 | `.claude/skills/<name>/` | Skill copies for Claude Code. |
 | `.agents/skills/<name>/` | Skill copies for Codex and Cursor. |
-| `AGENTS.md`, `CLAUDE.md` | One managed block per bundle, between `<!-- setup:begin <bundle> -->` and `<!-- setup:end <bundle> -->`. Text outside the blocks is never changed. |
+| `AGENTS.md` | The single source of instructions for Codex, Cursor and Claude Code. One managed block per bundle, between `<!-- setup:begin <bundle> -->` and `<!-- setup:end <bundle> -->`. Text outside the blocks is never changed. |
+| `CLAUDE.md` | Holds only `@AGENTS.md`, so Claude Code loads the shared instructions once. Created when absent, and then tracked in `setup.lock`. If your own `CLAUDE.md` has no such line, init prepends it once and leaves the rest of the file yours. If it already has one, init leaves it alone. |
 
 Running init again with the same bundles changes nothing.
+
+A project installed by an older version has every bundle block in `CLAUDE.md` too. The next `setup init` or `setup update` removes those blocks and adds the import. A block you edited by hand is a conflict, and `--force` replaces it.
+
+To see what the catalog offers, and what the project already has, run:
+
+```sh
+setup list            # table: name, layer, latest version, installed version, skills, description
+setup list --json     # the same as data
+```
+
+`setup list` uses the catalog resolved as above, and also works before init. Bundles released before the description field existed list an empty description.
 
 ### 3. Commit the result
 
@@ -265,5 +279,6 @@ A cloud agent clones the repo into a fresh sandbox. You can set up a project for
 | `conflict (hand-edited): <file>` | `update`, `add` or `remove` refused to overwrite your edit. The fix is the same as for drift. |
 | `warning: external scanner ... not found on PATH` | Install Gitleaks or skill-scanner, or pass `--allow-missing-scanners` when you release. |
 | `dev link active: ... run \`setup unlink\`` from `setup check` | The lock has bundles built from a local catalog. Run `setup unlink --catalog <dist-or-github:owner/repo>` to reinstall released bundles. Check passes afterwards. |
+| `medium [skill-link] ...` from `bundle check`, release or a dev install | A link in a skill points outside the skill folder or at a missing file. It does not block anything. Fix the link, inline the content, or add a `security-allow.yaml` entry for rule `skill-link`. |
 | A skill doesn't appear in the agent | Start a new session or chat. In Claude Code, `/reload-skills` also works. |
 | A skill name collision during `bundle check` or `init` | Two bundles ship a skill with the same name. Rename one of them. Names must be unique across the catalog. |

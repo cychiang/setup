@@ -45,6 +45,7 @@ var Rules = []Rule{
 	{ID: "curl-pipe-shell", Severity: High, Check: lineRule(curlPipe, "downloads and pipes a script into a shell")},
 	{ID: "base64-blob", Severity: High, Check: lineRule(base64Blob, "long base64 blob")},
 	{ID: "command-preamble", Severity: High, Check: lineRule(preamble, "line starts with a !` command preamble")},
+	{ID: "skill-link", Severity: Medium, Check: skillLinks},
 }
 
 var (

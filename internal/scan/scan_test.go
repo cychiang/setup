@@ -133,3 +133,64 @@ func TestMissingExternalScannersAreReported(t *testing.T) {
 		t.Fatalf("missing=%v err=%v", missing, err)
 	}
 }
+
+func skillWith(body string, extra tree.Tree) tree.Tree {
+	t := skill(body)
+	for k, v := range extra {
+		t[k] = v
+	}
+	return t
+}
+
+func TestLinksThatLeaveTheSkillFolderAreMediumAndNeverBlock(t *testing.T) {
+	cases := []struct {
+		name  string
+		files tree.Tree
+		want  string
+	}{
+		{"parent folder", skill("See [connectors](../../CONNECTORS.md).\n"), "leaves the skill folder"},
+		{"image outside", skill("![x](../img.png)\n"), "leaves the skill folder"},
+		{"missing file inside", skill("Read [notes](ref/notes.md).\n"), "does not contain"},
+		{"escape from a nested file", skillWith("ok\n", tree.Tree{"ref/a.md": []byte("[up](../../x.md)\n")}), "leaves the skill folder"},
+		{"reference definition", skill("[c]: ../CONNECTORS.md\n"), "leaves the skill folder"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := scan.Skill("demo", c.files, nil)
+			if len(got) != 1 || got[0].RuleID != "skill-link" || got[0].Severity != scan.Medium || !strings.Contains(got[0].Msg, c.want) {
+				t.Fatalf("findings = %+v", got)
+			}
+			if scan.Blocking(got) {
+				t.Fatal("a medium finding must not block")
+			}
+		})
+	}
+}
+
+func TestLinksThatStayInsideTheSkillAreClean(t *testing.T) {
+	files := skillWith(strings.Join([]string{
+		"[ref](ref/notes.md) and [section](#top) and [anchor](ref/notes.md#part).",
+		"[site](https://example.com/a) [mail](mailto:a@b.c) ![img](assets/p.png \"title\")",
+		"[dir](ref) [spaced](ref/my%20file.md)",
+		"Inline `[code](../nope.md)` is not a link.",
+		"```",
+		"[fenced](../nope.md)",
+		"```",
+		"",
+	}, "\n"), tree.Tree{
+		"ref/notes.md":   []byte("[back](../SKILL.md)\n"),
+		"ref/my file.md": []byte("x\n"),
+		"assets/p.png":   {1, 2, 3},
+	})
+	if got := scan.Skill("demo", files, nil); len(got) != 0 {
+		t.Fatalf("clean skill flagged: %+v", got)
+	}
+}
+
+func TestLinkFindingCanBeSuppressed(t *testing.T) {
+	files := skill("[c](../C.md)\n")
+	allow := []scan.Allow{{Skill: "demo", SHA256: files.Hash(), Rule: "skill-link", Reason: "documented"}}
+	if got := scan.Skill("demo", files, allow); len(got) != 0 {
+		t.Fatalf("got %v", got)
+	}
+}
