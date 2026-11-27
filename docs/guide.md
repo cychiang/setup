@@ -280,5 +280,6 @@ A cloud agent clones the repo into a fresh sandbox. You can set up a project for
 | `warning: external scanner ... not found on PATH` | Install Gitleaks or skill-scanner, or pass `--allow-missing-scanners` when you release. |
 | `dev link active: ... run \`setup unlink\`` from `setup check` | The lock has bundles built from a local catalog. Run `setup unlink --catalog <dist-or-github:owner/repo>` to reinstall released bundles. Check passes afterwards. |
 | `medium [skill-link] ...` from `bundle check`, release or a dev install | A link in a skill points outside the skill folder or at a missing file. It does not block anything. Fix the link, inline the content, or add a `security-allow.yaml` entry for rule `skill-link`. |
+| `GitHub API rate limit reached` from `list`, `init` or `update` | Anonymous GitHub API calls are limited to 60 an hour per IP, and shared sandboxes often use them up. Set `GH_TOKEN` or `GITHUB_TOKEN`, for example `GH_TOKEN=$(gh auth token) setup list`. |
 | A skill doesn't appear in the agent | Start a new session or chat. In Claude Code, `/reload-skills` also works. |
 | A skill name collision during `bundle check` or `init` | Two bundles ship a skill with the same name. Rename one of them. Names must be unique across the catalog. |

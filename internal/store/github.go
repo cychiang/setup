@@ -19,13 +19,16 @@ type GitHub struct {
 	Token string
 	API   string
 	HTTP  *http.Client
+
+	cached []release
 }
 
 type release struct {
 	Tag    string `json:"tag_name"`
 	Assets []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
+		Name     string `json:"name"`
+		URL      string `json:"url"`
+		Download string `json:"browser_download_url"`
 	} `json:"assets"`
 }
 
@@ -56,6 +59,9 @@ func (g *GitHub) get(url, accept string) ([]byte, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
+		if resp.Header.Get("X-RateLimit-Remaining") == "0" {
+			return nil, fmt.Errorf("GitHub API rate limit reached (%s); set GITHUB_TOKEN or GH_TOKEN, for example GH_TOKEN=$(gh auth token)", resp.Status)
+		}
 		return nil, fmt.Errorf("GET %s: %s", url, resp.Status)
 	}
 	return body, nil
@@ -63,7 +69,11 @@ func (g *GitHub) get(url, accept string) ([]byte, error) {
 
 func (g *GitHub) source() {}
 
+// releases is fetched once per store: anonymous API calls are limited to 60 an hour per IP.
 func (g *GitHub) releases() ([]release, error) {
+	if g.cached != nil {
+		return g.cached, nil
+	}
 	var all []release
 	for page := 1; ; page++ {
 		body, err := g.get(fmt.Sprintf("%s/repos/%s/releases?per_page=100&page=%d", g.API, g.Repo, page), "application/vnd.github+json")
@@ -76,6 +86,10 @@ func (g *GitHub) releases() ([]release, error) {
 		}
 		all = append(all, rs...)
 		if len(rs) < 100 {
+			if all == nil {
+				all = []release{}
+			}
+			g.cached = all
 			return all, nil
 		}
 	}
@@ -132,7 +146,12 @@ func (g *GitHub) Fetch(bundle string, v semver.Version) ([]byte, string, error) 
 		}
 		urls := map[string]string{}
 		for _, a := range r.Assets {
-			urls[a.Name] = a.URL
+			// Without a token, download URLs avoid the API rate limit. A token may be for a private repo, which only the API serves.
+			if g.Token == "" && a.Download != "" {
+				urls[a.Name] = a.Download
+			} else {
+				urls[a.Name] = a.URL
+			}
 		}
 		if urls[file] == "" || urls[file+".sha256"] == "" {
 			return nil, "", fmt.Errorf("release %s lacks %s or its .sha256", tag, file)
