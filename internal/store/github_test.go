@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/cychiang/setup/internal/semver"
@@ -48,5 +49,56 @@ func TestGitHubStore(t *testing.T) {
 	}
 	if _, _, err := s.Fetch("finance", semver.Version{Major: 1, Minor: 2}); err == nil {
 		t.Fatal("release without assets must fail")
+	}
+}
+
+func TestGitHubStoreAnonymousUsesOneAPICall(t *testing.T) {
+	payload := []byte("archive bytes")
+	apiCalls := 0
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/o/r/releases":
+			apiCalls++
+			fmt.Fprintf(w, `[
+ {"tag_name":"finance/v1.0.0","assets":[
+  {"name":"finance-1.0.0.tar.gz","url":"%[1]s/api-asset/1","browser_download_url":"%[1]s/download/finance-1.0.0.tar.gz"},
+  {"name":"finance-1.0.0.tar.gz.sha256","url":"%[1]s/api-asset/2","browser_download_url":"%[1]s/download/finance-1.0.0.tar.gz.sha256"}]},
+ {"tag_name":"base/v3.0.0","assets":[]}]`, srv.URL)
+		case "/download/finance-1.0.0.tar.gz":
+			w.Write(payload)
+		case "/download/finance-1.0.0.tar.gz.sha256":
+			fmt.Fprintf(w, "%s  finance-1.0.0.tar.gz\n", tree.SHA(payload))
+		default:
+			http.Error(w, "anonymous requests must not use API asset URLs: "+r.URL.Path, http.StatusForbidden)
+		}
+	}))
+	defer srv.Close()
+
+	s := &store.GitHub{Repo: "o/r", API: srv.URL}
+	if _, err := s.Bundles(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Latest(s, "finance"); err != nil {
+		t.Fatal(err)
+	}
+	data, _, err := s.Fetch("finance", semver.Version{Major: 1})
+	if err != nil || string(data) != string(payload) {
+		t.Fatalf("fetch = %q %v", data, err)
+	}
+	if apiCalls != 1 {
+		t.Fatalf("release list fetched %d times, want 1 per store", apiCalls)
+	}
+}
+
+func TestGitHubStoreExplainsRateLimit(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-RateLimit-Remaining", "0")
+		http.Error(w, "rate limited", http.StatusForbidden)
+	}))
+	defer srv.Close()
+	_, err := (&store.GitHub{Repo: "o/r", API: srv.URL}).Bundles()
+	if err == nil || !strings.Contains(err.Error(), "GH_TOKEN") {
+		t.Fatalf("want a rate-limit hint naming GH_TOKEN, got %v", err)
 	}
 }
