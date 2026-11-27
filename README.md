@@ -25,14 +25,46 @@ A bundle covers one concern, such as finance knowledge or producing PDF reports.
 
 ## Install
 
+Pick one. All three give you the same binary, and `setup --version` prints its version, commit and build date.
+
 ```sh
-git clone git@github.com:cychiang/setup.git
-cd setup/tool
-go build -o ~/bin/setup ./cmd/setup    # any directory on your PATH
-setup --help
+go install github.com/cychiang/setup/cmd/setup@latest    # needs Go 1.27 or later
 ```
 
-This needs Go 1.27 or later. The binary has no runtime dependencies.
+```sh
+export GITHUB_TOKEN=$(gh auth token)    # the repo is private
+gh api repos/cychiang/setup/contents/install.sh -H 'Accept: application/vnd.github.raw' | sh
+```
+
+`install.sh` downloads a release archive, verifies its checksum and installs `setup` into `~/.local/bin`. Set `VERSION=v0.1.0` to pin a release and `SETUP_INSTALL_DIR` to change the target. The repo is private, so both need credentials. `install.sh` reads `GITHUB_TOKEN` or `GH_TOKEN`. For `go install`, set `GOPRIVATE=github.com/cychiang/setup` and let git authenticate.
+
+To build from a clone:
+
+```sh
+git clone git@github.com:cychiang/setup.git
+cd setup
+make build        # writes bin/setup
+make install      # or install into your GOBIN
+```
+
+The binary has no runtime dependencies.
+
+## Develop
+
+`make help` lists the targets. Only Go, git, tar and a POSIX shell are required.
+
+| Command | What it does |
+|---|---|
+| `make build` | Builds `bin/setup` with the version stamped in. |
+| `make run ARGS="check --json"` | Builds and runs `bin/setup` with those arguments. |
+| `make test` | Runs the unit and in-process end-to-end tests. |
+| `make lint` | Checks gofmt, runs `go vet` and staticcheck. |
+| `make vuln` | Runs govulncheck. |
+| `make e2e` | Replays the whole workflow against the real catalog in `bundles/`: sync, check, release, init, drift, update. Needs network access to GitHub. |
+| `make dist VERSION=v0.1.0` | Cross-compiles release archives and `checksums.txt` into `dist/`. |
+| `make clean` | Removes `bin/` and `dist/`. |
+
+CI runs `lint`, `test` (Linux and macOS), `vuln` and `e2e` on every pull request. Pushing a tag such as `v0.1.0` runs the tests and publishes the release archives. Bundle releases use tags like `finance/v0.1.0` and do not trigger a tool release.
 
 ## Quick start
 
@@ -68,9 +100,14 @@ For the full walkthrough, which covers writing your own bundle, updates, CI and 
 ## Repository layout
 
 ```
-tool/       Go module for the setup binary (cmd/setup, internal/...)
-bundles/    the catalog: sources.yaml, sources.lock, security-allow.yaml, one folder per bundle
-docs/       design.md (decisions and formats), guide.md (step-by-step usage)
+cmd/setup/   main package of the setup binary
+internal/    the Go packages behind it
+bundles/     the catalog: sources.yaml, sources.lock, security-allow.yaml, one folder per bundle
+docs/        design.md (decisions and formats), guide.md (step-by-step usage)
+scripts/     e2e.sh (full workflow check) and release.sh (reproducible release archives)
+install.sh   installer for release archives
+Makefile     build, test, lint, e2e and dist targets
+go.mod       Go module github.com/cychiang/setup
 ```
 
 ## Status

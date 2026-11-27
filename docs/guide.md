@@ -10,11 +10,11 @@ Every command accepts `--json` where machine-readable output makes sense. Comman
 ## Part 0. Install the binary
 
 ```sh
-git clone git@github.com:cychiang/setup.git
-cd setup/tool
-go build -o ~/bin/setup ./cmd/setup
-setup --help
+go install github.com/cychiang/setup/cmd/setup@latest
+setup --version
 ```
+
+You can also run `install.sh` from the repo root, which installs a verified release archive into `~/.local/bin`, or build from a clone with `make build` and use `bin/setup`. The README lists the options. In a clone, `make e2e` replays Parts 1 and 2 against the real catalog and fails on any deviation.
 
 `setup` caches third-party sources under `~/.setup/sources`. To put the cache somewhere else, set `SETUP_HOME`.
 

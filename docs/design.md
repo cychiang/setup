@@ -84,7 +84,7 @@ The released archive is the only interface between the two modes. Init mode has 
 | 10 | Bundle selection works through flags, an inferring agent, and later a picker. All three produce explicit bundle names. | Nothing about the selection is hidden, and `setup.lock` shows what was chosen. |
 | 11 | Each bundle has its own version, for example `finance/v1.2.0`. | Bundles are released on their own schedules. |
 | 12 | The tool is separate from the catalog, and both are private for now. | Other people can use the tool with their own catalog later. |
-| 13 | One repo for now, with `tool/` and `bundles/`. | Early on the tool and the bundles change together. |
+| 13 | One repo for now. The Go module sits at the repo root next to `bundles/`. | Early on the tool and the bundles change together. |
 | 14 | Sources are pinned once for the whole catalog. | This prevents version conflicts when a project combines bundles. |
 | 15 | Search covers registered sources only. The agent proposes new sources (deferred). | Only trusted text can reach agents. |
 | 16 | Forks are updated with a copier-style three-way merge (deferred). | Most upstream edits merge cleanly, and conflicts are visible. |
@@ -119,6 +119,21 @@ The released archive is the only interface between the two modes. Init mode has 
 A high-severity finding blocks the release. To suppress a finding, add an entry to `security-allow.yaml` with a written reason. The entry is tied to the skill and to its content hash, so it stops applying when the content changes. If an external scanner is missing, `check` warns, and `release` fails unless `--allow-missing-scanners` is passed.
 
 ## Files
+
+### Repository
+
+```
+go.mod, go.sum        # module github.com/cychiang/setup
+cmd/setup/            # main package
+internal/             # archive, build, catalog, cli, fetch, project, scan, store, version, ...
+bundles/              # the catalog (below)
+scripts/              # e2e.sh, release.sh, tarball.go
+install.sh            # installs a release archive after verifying its checksum
+Makefile              # build, run, test, lint, vuln, e2e, dist, install
+.github/workflows/    # ci.yml, release.yml
+```
+
+Tool releases are tagged `vX.Y.Z` and publish `setup_<version>_<os>_<arch>.tar.gz` archives plus `checksums.txt`. Bundle releases are tagged `<bundle>/vX.Y.Z`. The tool release workflow runs only on tags that start with `v`, so a bundle tag never triggers it.
 
 ### Catalog (`bundles/`)
 
