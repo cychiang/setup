@@ -40,6 +40,9 @@ const usage = `usage: setup <command>
 build mode:
   source add <name> <git-url>
   source sync [<name>]
+  skills [--source <name>] [--query <text>] [--json] [--markdown]
+                       list skills you can add, with the ref to pass to bundle add
+  bundle list [--json]
   bundle new <name> --layer base|domain|type
   bundle add <bundle> <source>/<path> | --local <name>
   bundle remove <bundle> <skill>
@@ -87,6 +90,8 @@ func dispatch(args []string, env Env) error {
 	switch cmd {
 	case "source":
 		return sourceCmd(rest, env)
+	case "skills":
+		return skillsCmd(rest, env)
 	case "bundle":
 		return bundleCmd(rest, env)
 	case "init":

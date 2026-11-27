@@ -123,7 +123,7 @@ func short(c string) string {
 
 func bundleCmd(args []string, env Env) error {
 	if len(args) == 0 {
-		return usageError("bundle: want new, add, remove, check or release")
+		return usageError("bundle: want new, add, remove, list, check or release")
 	}
 	sub := args[0]
 	fs := newFlags("bundle "+sub, env)
@@ -133,7 +133,7 @@ func bundleCmd(args []string, env Env) error {
 	publish := fs.Bool("publish", false, "create the GitHub release (release)")
 	out := fs.String("out", "dist", "output directory (release)")
 	allowMissing := fs.Bool("allow-missing-scanners", false, "release even if external scanners are missing")
-	asJSON := fs.Bool("json", false, "machine-readable output (check)")
+	asJSON := fs.Bool("json", false, "machine-readable output (check, list)")
 	pos, err := parseFlags(fs, args[1:])
 	if err != nil {
 		return err
@@ -190,6 +190,11 @@ func bundleCmd(args []string, env Env) error {
 		return c.SaveBundle(b)
 	case "check":
 		return bundleCheck(env, *catFlag, pos, *asJSON)
+	case "list":
+		if len(pos) != 0 {
+			return usageError("bundle list [--json]")
+		}
+		return bundleList(env, *catFlag, *asJSON)
 	case "release":
 		if len(pos) != 1 {
 			return usageError("bundle release <bundle> [--publish]")

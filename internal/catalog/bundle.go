@@ -106,3 +106,15 @@ func (b Bundle) Marshal() ([]byte, error) {
 	}
 	return yaml.Marshal(raw)
 }
+
+// Ref formats a skill reference as the user types it: "<source>/<path>" for
+// upstream skills and "local:<bundle>/<name>" for a bundle's own skills.
+func Ref(bundle string, s SkillRef) string {
+	switch s := s.(type) {
+	case Local:
+		return "local:" + bundle + "/" + s.Name
+	case Remote:
+		return s.Source + "/" + s.Path
+	}
+	return ""
+}
