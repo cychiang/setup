@@ -49,7 +49,19 @@ This creates `bundles/healthcare/` with `bundle.yaml`, `skills/` and `instructio
 
 Open `bundles/healthcare/bundle.yaml` and fill in `description`. If another bundle pairs well with this one, list it under `suggests`. This is advice only, and nothing is installed automatically.
 
-### 3. Add skills
+### 3. Find skills to add
+
+List the skills your registered sources offer, so you do not need to know their folder paths:
+
+```sh
+setup skills --source anthropic-kwp --query finance
+```
+
+The output has the columns REF, NAME, USED BY and DESCRIPTION. USED BY names the bundles that already include the skill. `--query` matches the name, path and description without regard to case. Descriptions are shortened in the table. Use `--json` for the full data, or `--markdown > skills.md` for a Markdown table you can keep. Your own local skills appear too, with refs like `local:finance/money-precision`. A source that is registered but not pinned gives a warning. Run `setup source sync <name>` to pin it. A skill without valid frontmatter is marked `(invalid)`.
+
+To see your bundles and what each one contains, run `setup bundle list`.
+
+### 4. Add skills
 
 You can add a skill you wrote yourself. Create `bundles/<bundle>/skills/<name>/SKILL.md` first, then register it:
 
@@ -57,7 +69,7 @@ You can add a skill you wrote yourself. Create `bundles/<bundle>/skills/<name>/S
 setup bundle add healthcare --local hipaa-basics
 ```
 
-You can also add a skill from a registered source. Give the source name followed by the path of the skill folder inside that repo:
+You can also add a skill from a registered source. Copy its REF from `setup skills`. A REF is the source name followed by the path of the skill folder inside that repo:
 
 ```sh
 setup bundle add finance anthropic-kwp/finance/skills/financial-statements
@@ -78,11 +90,11 @@ Every SKILL.md needs YAML frontmatter that follows the Agent Skills spec:
 
 Keep bundles small. One to three skills per bundle is a good size.
 
-### 4. Add instructions (optional)
+### 5. Add instructions (optional)
 
 Put short Markdown snippets in `bundles/<bundle>/instructions/*.md`. Init places each bundle's snippets in a labelled block in the project's `AGENTS.md` and `CLAUDE.md`. Don't add `setup:begin` markers yourself, because the tool writes them.
 
-### 5. Check the catalog
+### 6. Check the catalog
 
 ```sh
 setup bundle check            # all bundles
@@ -108,7 +120,7 @@ To suppress a reviewed finding, add an entry to `bundles/security-allow.yaml`:
 
 A suppression is tied to the skill's content hash. If the skill changes, the finding comes back.
 
-### 6. Release a bundle
+### 7. Release a bundle
 
 Bump `version` in `bundle.yaml` whenever the bundle's content changes. Then release:
 
@@ -121,7 +133,7 @@ This writes `dist/finance-0.1.0.tar.gz` and `dist/finance-0.1.0.tar.gz.sha256`. 
 - If an external scanner is missing, the release fails. Pass `--allow-missing-scanners` to release anyway.
 - Pass `--publish` to also create a GitHub release tagged `finance/v0.1.0`, using `gh`. Projects can then use `--catalog github:cychiang/setup`.
 
-### 7. Commit the catalog
+### 8. Commit the catalog
 
 Commit `bundles/` so that the source registry, the pins and the bundle definitions are versioned. Don't commit `dist/`.
 

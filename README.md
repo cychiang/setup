@@ -86,6 +86,17 @@ setup check                             # prints "ok"
 
 Open Claude Code, Codex or Cursor in the project. The skills are available from the first turn.
 
+To see which third-party skills you can add, and which bundles exist:
+
+```sh
+setup skills --source anthropic-kwp --query finance   # REF, NAME, USED BY, DESCRIPTION
+setup skills --markdown > skills.md                   # full catalog as a Markdown table
+setup bundle list                                     # bundles by layer, with their skills
+setup bundle add finance <REF>                        # paste a REF from the list
+```
+
+`setup skills` lists every skill in each pinned source plus your own local skills. `--json` gives the full data.
+
 For the full walkthrough, which covers writing your own bundle, updates, CI and cloud agents, read [docs/guide.md](docs/guide.md).
 
 ## Bundles in this catalog

@@ -191,6 +191,8 @@ Build mode:
 ```
 setup source add <name> <git-url>
 setup source sync [<name>]            # fetch and re-pin in sources.lock
+setup skills [--source <n>] [--query <t>] [--json] [--markdown]   # list pickable skills with their refs
+setup bundle list [--json]
 setup bundle new <name> --layer <l>
 setup bundle add <bundle> <source>/<path> | --local <name>
 setup bundle remove <bundle> <skill>
