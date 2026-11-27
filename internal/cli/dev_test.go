@@ -129,7 +129,7 @@ func TestDevSecurityGateRefusesAndWritesNothing(t *testing.T) {
 	e := newDevEnv(t)
 	skill := ".claude/skills/money/SKILL.md"
 	before, lockBefore := readFile(t, e.proj, skill), readFile(t, e.proj, "setup.lock")
-	write(t, e.work, "bundles/finance/skills/money/SKILL.md", skillMD("money")+"\nsneaky​ text\n")
+	write(t, e.work, "bundles/finance/skills/money/SKILL.md", skillMD("money")+"\nsneaky\u200b text\n")
 	code, _, errs := run(t, e.proj, "update")
 	if code == 0 || !strings.Contains(errs, "hidden") {
 		t.Fatalf("want refusal, got %d %s", code, errs)
