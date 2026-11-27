@@ -32,11 +32,10 @@ go install github.com/cychiang/setup/cmd/setup@latest    # needs Go 1.27 or late
 ```
 
 ```sh
-export GITHUB_TOKEN=$(gh auth token)    # the repo is private
-gh api repos/cychiang/setup/contents/install.sh -H 'Accept: application/vnd.github.raw' | sh
+curl -fsSL https://raw.githubusercontent.com/cychiang/setup/main/install.sh | sh
 ```
 
-`install.sh` downloads a release archive, verifies its checksum and installs `setup` into `~/.local/bin`. Set `VERSION=v0.1.0` to pin a release and `SETUP_INSTALL_DIR` to change the target. The repo is private, so both need credentials. `install.sh` reads `GITHUB_TOKEN` or `GH_TOKEN`. For `go install`, set `GOPRIVATE=github.com/cychiang/setup` and let git authenticate.
+`install.sh` downloads a release archive, verifies its checksum and installs `setup` into `~/.local/bin`. Set `VERSION=v0.1.0` to pin a release and `SETUP_INSTALL_DIR` to change the target. No credentials are needed. `install.sh` also reads `GITHUB_TOKEN` or `GH_TOKEN` if set, which raises the GitHub API rate limit.
 
 To build from a clone:
 
@@ -124,7 +123,7 @@ go.mod       Go module github.com/cychiang/setup
 
 ## Status
 
-This is an MVP. The repo is private, and the following are not done yet:
+This is an MVP. The following are not done yet:
 
 - tracked forks of third-party skills
 - a review step for third-party changes

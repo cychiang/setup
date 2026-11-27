@@ -1,7 +1,7 @@
 #!/bin/sh
 # Install the setup binary from GitHub Releases of cychiang/setup.
 # Env: VERSION (default latest), SETUP_INSTALL_DIR (default ~/.local/bin),
-#      GITHUB_TOKEN or GH_TOKEN (private repo), SETUP_RELEASE_DIR (install from local dist/).
+#      GITHUB_TOKEN or GH_TOKEN (optional, raises the API rate limit), SETUP_RELEASE_DIR (install from local dist/).
 set -eu
 
 REPO=cychiang/setup

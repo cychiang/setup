@@ -154,8 +154,7 @@ Run init from the project root:
 # from local release archives
 setup init --bundles base,finance,pdf-reports --catalog ~/Projects/github.com/cychiang/setup/dist
 
-# from GitHub releases (needs a token while the repo is private)
-export GITHUB_TOKEN=<read-only token with access to cychiang/setup>
+# from GitHub releases
 setup init --bundles base,finance,pdf-reports --catalog github:cychiang/setup
 ```
 
@@ -220,7 +219,7 @@ It exits 1 and names the file when any generated file differs from `setup.lock`.
 A cloud agent clones the repo into a fresh sandbox. You can set up a project for one in either of two ways.
 
 - **Commit the generated files (recommended).** Run init locally, as in Part 2, and commit. The cloud agent sees everything in the clone. It needs no binary, no token and no network access.
-- **Let the agent initialize the project.** Tell the agent which bundles to use. The agent then installs the `setup` binary in the sandbox and runs `setup init --bundles ... --catalog github:cychiang/setup --json`. While the repo is private, add a read-only `GITHUB_TOKEN` to the cloud environment's secrets. Prefer the environment's setup step (setup script, install script or `environment.json`) over running init in the chat, because instructions only load at session start.
+- **Let the agent initialize the project.** Tell the agent which bundles to use. The agent then installs the `setup` binary in the sandbox and runs `setup init --bundles ... --catalog github:cychiang/setup --json`. Prefer the environment's setup step (setup script, install script or `environment.json`) over running init in the chat, because instructions only load at session start.
 
 ## Troubleshooting
 
