@@ -54,6 +54,10 @@ init mode:
   add <bundle>...      remove <bundle>...
   outdated [--json]    update [<bundle>...] [--force]
   check [--json]
+  link <source-catalog-dir>
+                       dev mode: build bundles from a local catalog; init --catalog <dir> does the same
+  unlink [--catalog <dir|github:owner/repo>] [--force]
+                       leave dev mode and reinstall released bundles
 
 other:
   version              print version, commit and build date (also --version)
@@ -102,6 +106,10 @@ func dispatch(args []string, env Env) error {
 		return removeCmd(rest, env)
 	case "outdated":
 		return outdatedCmd(rest, env)
+	case "link":
+		return linkCmd(rest, env)
+	case "unlink":
+		return unlinkCmd(rest, env)
 	case "update":
 		return updateCmd(rest, env)
 	case "check":

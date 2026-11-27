@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cychiang/setup/internal/fetch"
 	"github.com/cychiang/setup/internal/project"
 	"github.com/cychiang/setup/internal/store"
 )
@@ -22,7 +23,7 @@ type initFlags struct {
 func newInitFlags(name string, env Env) (*flag.FlagSet, *initFlags) {
 	fs := newFlags(name, env)
 	f := &initFlags{}
-	fs.StringVar(&f.catalog, "catalog", "", "directory of release archives or github:owner/repo")
+	fs.StringVar(&f.catalog, "catalog", "", "directory of release archives, github:owner/repo, or a source catalog to link in dev mode")
 	fs.StringVar(&f.bundles, "bundles", "", "comma-separated bundle names")
 	fs.BoolVar(&f.asJSON, "json", false, "machine-readable output")
 	fs.BoolVar(&f.force, "force", false, "overwrite hand-edited generated files")
@@ -94,16 +95,64 @@ func nonNil(s []string) []string {
 	return s
 }
 
-func install(env Env, cfg project.Config, flagCatalog string, f *initFlags, opt project.Options) error {
-	if flagCatalog != "" {
-		cfg.Catalog = flagCatalog
-	}
-	st, err := store.Open(cfg.Catalog, env.Dir, env.getenv)
+// resolved is a project's effective bundle source, decided once per command.
+// link is the dev catalog to record in setup.local.yaml after a successful install.
+type resolved struct {
+	src     store.Source
+	catalog string
+	link    string
+}
+
+// resolveSource applies the precedence setup.local.yaml > --catalog > setup.yaml.
+func resolveSource(env Env, cfg project.Config, flagCatalog string) (resolved, error) {
+	local, err := project.LoadLocal(env.Dir)
 	if err != nil {
-		return err
+		return resolved{}, err
 	}
+	if local.DevCatalog != "" {
+		if !store.IsSourceCatalog(local.DevCatalog) {
+			return resolved{}, fmt.Errorf("dev catalog %s is not a source catalog; fix it or run `setup unlink`", local.DevCatalog)
+		}
+		if flagCatalog != "" {
+			fmt.Fprintf(env.Err, "note: dev link active (%s); ignoring --catalog\n", project.LocalFile)
+		}
+		cache, err := fetch.DefaultCacheDir(env.getenv)
+		if err != nil {
+			return resolved{}, err
+		}
+		return resolved{src: &store.Dev{Dir: local.DevCatalog, CacheDir: cache}, catalog: cfg.Catalog}, nil
+	}
+	return resolveSpec(env, cfg, flagCatalog)
+}
+
+// resolveSpec ignores setup.local.yaml: a source catalog spec enters dev mode, anything else is released.
+func resolveSpec(env Env, cfg project.Config, spec string) (resolved, error) {
+	if spec == "" {
+		spec = cfg.Catalog
+	}
+	cache, err := fetch.DefaultCacheDir(env.getenv)
+	if err != nil {
+		return resolved{}, err
+	}
+	dev, ok, err := store.DevAt(spec, env.Dir, cache)
+	if err != nil {
+		return resolved{}, err
+	}
+	if ok {
+		return resolved{src: dev, catalog: cfg.Catalog, link: dev.Dir}, nil
+	}
+	st, err := store.Open(spec, env.Dir, env.getenv)
+	if err != nil {
+		return resolved{}, err
+	}
+	return resolved{src: st, catalog: spec}, nil
+}
+
+func install(env Env, cfg project.Config, r resolved, f *initFlags, opt project.Options) error {
+	cfg.Catalog = r.catalog
 	opt.Force = f.force
-	res, err := project.Install(env.Dir, cfg, st, opt)
+	opt.Warn = func(w string) { fmt.Fprintln(env.Err, "warning:", w) }
+	res, err := project.Install(env.Dir, cfg, r.src, opt)
 	if errors.Is(err, project.ErrConflicts) {
 		for _, c := range res.Report.Conflicts {
 			fmt.Fprintln(env.Err, "conflict (hand-edited):", c)
@@ -115,7 +164,21 @@ func install(env Env, cfg project.Config, flagCatalog string, f *initFlags, opt 
 	if err := project.SaveConfig(env.Dir, cfg); err != nil {
 		return err
 	}
+	if r.link != "" {
+		if err := project.LinkDev(env.Dir, r.link); err != nil {
+			return err
+		}
+		fmt.Fprintf(env.Err, "dev link active: bundles come from %s; `setup check` fails until `setup unlink`\n", r.link)
+	}
 	return report(env, res, f.asJSON)
+}
+
+func installFrom(env Env, cfg project.Config, flagCatalog string, f *initFlags, opt project.Options) error {
+	r, err := resolveSource(env, cfg, flagCatalog)
+	if err != nil {
+		return err
+	}
+	return install(env, cfg, r, f, opt)
 }
 
 func loadConfigOrNew(env Env) (project.Config, error) {
@@ -138,7 +201,7 @@ func initCmd(args []string, env Env) error {
 	if f.bundles != "" || len(cfg.Bundles) == 0 {
 		cfg.Bundles = project.WithBase(splitList(f.bundles))
 	}
-	return install(env, cfg, f.catalog, f, project.Options{})
+	return installFrom(env, cfg, f.catalog, f, project.Options{})
 }
 
 func requireConfig(env Env) (project.Config, error) {
@@ -163,7 +226,7 @@ func addCmd(args []string, env Env) error {
 		return err
 	}
 	cfg.Bundles = project.WithBase(append(cfg.Bundles, pos...))
-	return install(env, cfg, f.catalog, f, project.Options{})
+	return installFrom(env, cfg, f.catalog, f, project.Options{})
 }
 
 func removeCmd(args []string, env Env) error {
@@ -189,7 +252,7 @@ func removeCmd(args []string, env Env) error {
 		cfg.Bundles = slices.DeleteFunc(cfg.Bundles, func(b string) bool { return b == n })
 		cfg.Disable = slices.DeleteFunc(cfg.Disable, func(d string) bool { return strings.HasPrefix(d, n+"/") })
 	}
-	return install(env, cfg, f.catalog, f, project.Options{})
+	return installFrom(env, cfg, f.catalog, f, project.Options{})
 }
 
 func updateCmd(args []string, env Env) error {
@@ -202,7 +265,7 @@ func updateCmd(args []string, env Env) error {
 	if err != nil {
 		return err
 	}
-	return install(env, cfg, f.catalog, f, project.Options{Upgrade: pos, UpgradeAll: len(pos) == 0})
+	return installFrom(env, cfg, f.catalog, f, project.Options{Upgrade: pos, UpgradeAll: len(pos) == 0})
 }
 
 func outdatedCmd(args []string, env Env) error {
@@ -214,21 +277,23 @@ func outdatedCmd(args []string, env Env) error {
 	if err != nil {
 		return err
 	}
-	if f.catalog != "" {
-		cfg.Catalog = f.catalog
-	}
-	st, err := store.Open(cfg.Catalog, env.Dir, env.getenv)
-	if err != nil {
-		return err
-	}
 	lock, err := project.LoadLock(env.Dir)
 	if err != nil {
 		return err
 	}
-	ups, err := project.Outdated(lock, st)
-	if err != nil {
-		return err
+	var ups []project.Update
+	if released := len(lock.Bundles) > len(lock.DevBundles()); released {
+		r, err := resolveSource(env, cfg, f.catalog)
+		if err != nil {
+			return err
+		}
+		if st, ok := r.src.(store.Store); ok {
+			if ups, err = project.Outdated(lock, st); err != nil {
+				return err
+			}
+		}
 	}
+	dev := lock.DevBundles()
 	if f.asJSON {
 		if ups == nil {
 			ups = []project.Update{}
@@ -236,18 +301,76 @@ func outdatedCmd(args []string, env Env) error {
 		if err := printJSON(env.Out, ups); err != nil {
 			return err
 		}
-	} else if len(ups) == 0 {
-		fmt.Fprintln(env.Out, "all bundles are up to date")
-	}
-	for _, u := range ups {
-		if !f.asJSON {
+		for _, n := range dev {
+			fmt.Fprintf(env.Err, "%s dev-linked\n", n)
+		}
+	} else {
+		for _, u := range ups {
 			fmt.Fprintf(env.Out, "%s %s -> %s\n", u.Name, u.Current, u.Latest)
+		}
+		for _, n := range dev {
+			fmt.Fprintf(env.Out, "%s dev-linked\n", n)
+		}
+		if len(ups) == 0 && len(dev) == 0 {
+			fmt.Fprintln(env.Out, "all bundles are up to date")
 		}
 	}
 	if len(ups) > 0 {
 		return errExit
 	}
 	return nil
+}
+
+func linkCmd(args []string, env Env) error {
+	fs, f := newInitFlags("link", env)
+	pos, err := parseFlags(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(pos) != 1 {
+		return usageError("link <source-catalog-dir>")
+	}
+	cfg, err := requireConfig(env)
+	if err != nil {
+		return err
+	}
+	r, err := resolveSpec(env, cfg, pos[0])
+	if err != nil {
+		return err
+	}
+	if r.link == "" {
+		return fmt.Errorf("%s is not a source catalog (no sources.yaml or <bundle>/bundle.yaml)", pos[0])
+	}
+	return install(env, cfg, r, f, project.Options{UpgradeAll: true})
+}
+
+func unlinkCmd(args []string, env Env) error {
+	fs, f := newInitFlags("unlink", env)
+	if _, err := parseFlags(fs, args); err != nil {
+		return err
+	}
+	cfg, err := requireConfig(env)
+	if err != nil {
+		return err
+	}
+	spec := f.catalog
+	if spec == "" {
+		spec = cfg.Catalog
+	}
+	if spec == "" {
+		return fmt.Errorf("no released catalog is known: %s has no catalog; pass --catalog <dir|github:owner/repo>", project.ConfigFile)
+	}
+	r, err := resolveSpec(env, cfg, spec)
+	if err != nil {
+		return err
+	}
+	if r.link != "" {
+		return fmt.Errorf("%s is a source catalog; unlink needs a released catalog (archives or github:owner/repo)", spec)
+	}
+	if err := install(env, cfg, r, f, project.Options{}); err != nil {
+		return err
+	}
+	return project.Unlink(env.Dir)
 }
 
 func checkCmd(args []string, env Env) error {
@@ -266,22 +389,26 @@ func checkCmd(args []string, env Env) error {
 	if err != nil {
 		return err
 	}
+	dev := lock.DevBundles()
 	if f.asJSON {
 		if drift == nil {
 			drift = []string{}
 		}
-		if err := printJSON(env.Out, map[string]any{"ok": len(drift) == 0, "drift": drift}); err != nil {
+		if err := printJSON(env.Out, map[string]any{"ok": len(drift) == 0 && len(dev) == 0, "drift": drift, "dev_linked": nonNil(dev)}); err != nil {
 			return err
 		}
 	} else {
 		for _, d := range drift {
 			fmt.Fprintln(env.Out, "drift:", d)
 		}
-		if len(drift) == 0 {
+		if len(dev) > 0 {
+			fmt.Fprintf(env.Out, "dev link active: %s built from a local catalog; run `setup unlink` before you commit or share\n", strings.Join(dev, ", "))
+		}
+		if len(drift) == 0 && len(dev) == 0 {
 			fmt.Fprintln(env.Out, "ok")
 		}
 	}
-	if len(drift) > 0 {
+	if len(drift) > 0 || len(dev) > 0 {
 		return errExit
 	}
 	return nil
