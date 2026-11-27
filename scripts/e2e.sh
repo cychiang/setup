@@ -56,6 +56,11 @@ expect_code 0 "init" "$SETUP" init --bundles "$ALL_CSV" --catalog "$WORK/A" --ye
 
 grep -q '^my own line$' AGENTS.md || fail "user line lost from AGENTS.md"
 pass "user line survives in AGENTS.md"
+[ "$(grep -c '^<!-- setup:begin ' AGENTS.md)" -eq 5 ] || fail "AGENTS.md should hold 5 bundle blocks"
+grep -q '^@AGENTS.md$' CLAUDE.md || fail "CLAUDE.md lacks the @AGENTS.md import"
+[ "$(cat CLAUDE.md)" = "@AGENTS.md" ] || fail "CLAUDE.md should hold only the import"
+! grep -q 'setup:begin finance' CLAUDE.md || fail "CLAUDE.md repeats a bundle block"
+pass "AGENTS.md has 5 bundle blocks, CLAUDE.md only the import"
 for dir in .claude/skills .agents/skills; do
 	for s in setup-workbench money-precision financial-statements concise-explaining diagrams-and-charts pdf-reports; do
 		[ -f "$dir/$s/SKILL.md" ] || fail "$dir/$s/SKILL.md missing"

@@ -140,9 +140,7 @@ func TestInstallGoldens(t *testing.T) {
 		t.Fatal(err)
 	}
 	golden.Assert(t, "AGENTS.md", []byte(read(t, e.root, "AGENTS.md")))
-	if read(t, e.root, "AGENTS.md") != read(t, e.root, "CLAUDE.md") {
-		t.Error("AGENTS.md and CLAUDE.md should carry the same blocks")
-	}
+	golden.Assert(t, "CLAUDE.md", []byte(read(t, e.root, "CLAUDE.md")))
 	lock := read(t, e.root, "setup.lock")
 	// archive hashes depend on the gzip implementation; pin the structure, not those bytes.
 	lock = redactArchiveHashes(lock)

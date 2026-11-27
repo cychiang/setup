@@ -65,18 +65,8 @@
     },
     {
       "path": "CLAUDE.md",
-      "sha256": "376f3cf3299e1246ce58089a0c2384d42b970d57f11da484b27a0679c3fdd438",
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
       "bundle": "base"
-    },
-    {
-      "path": "CLAUDE.md",
-      "sha256": "cfccf812ab449c3c85cf775668f42a6caa7f95a8ffb859cb2d540593dda84fd0",
-      "bundle": "finance"
-    },
-    {
-      "path": "CLAUDE.md",
-      "sha256": "ac274f63c088587bbe2282a86e2f6f7a87b080f0eef6d246422ebcb597847114",
-      "bundle": "pdf-reports"
     }
   ]
 }
