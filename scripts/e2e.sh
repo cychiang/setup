@@ -83,3 +83,24 @@ pass "check names $DRIFTED"
 expect_code 1 "update refuses without --force" "$SETUP" update
 expect_code 0 "update --force" "$SETUP" update --force
 expect_code 0 "check after update --force" "$SETUP" check
+
+# Dev mode runs against a copy of the catalog, so the real bundles/ is never touched.
+cd "$ROOT"
+DEVCAT="$WORK/devcat"
+cp -R bundles "$DEVCAT"
+DEVPROJ="$WORK/devproj"
+mkdir "$DEVPROJ"
+git -C "$DEVPROJ" init -q
+cd "$DEVPROJ"
+expect_code 0 "dev init from a source catalog" "$SETUP" init --bundles "$ALL_CSV" --catalog "$DEVCAT" --yes
+grep -q '^setup.local.yaml$' .gitignore || fail "setup.local.yaml is not gitignored"
+! grep -q "$WORK" setup.yaml setup.lock || fail "setup.yaml or setup.lock leaks a local path"
+pass "dev link stays out of setup.yaml and setup.lock"
+expect_code 1 "check fails while dev linked" "$SETUP" check
+printf '\ndev edit\n' >>"$DEVCAT/finance/skills/money-precision/SKILL.md"
+expect_code 0 "dev update" "$SETUP" update
+grep -q 'dev edit' .claude/skills/money-precision/SKILL.md || fail "dev update did not pick up the catalog edit"
+pass "dev update shows the catalog edit"
+expect_code 0 "unlink to the released dist" "$SETUP" unlink --catalog "$WORK/A"
+[ ! -e setup.local.yaml ] || fail "unlink left setup.local.yaml"
+expect_code 0 "check after unlink" "$SETUP" check
