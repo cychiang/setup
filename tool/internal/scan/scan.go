@@ -19,10 +19,16 @@ type Finding struct {
 	Path     string   `json:"path"`
 	Line     int      `json:"line"`
 	Msg      string   `json:"msg"`
+	// SkillSHA256 is the hash a security-allow.yaml entry must name to suppress this finding.
+	SkillSHA256 string `json:"skill_sha256,omitempty"`
 }
 
 func (f Finding) String() string {
-	return fmt.Sprintf("%s [%s] %s/%s:%d %s", f.Severity, f.RuleID, f.Skill, f.Path, f.Line, f.Msg)
+	s := fmt.Sprintf("%s [%s] %s/%s:%d %s", f.Severity, f.RuleID, f.Skill, f.Path, f.Line, f.Msg)
+	if f.SkillSHA256 != "" {
+		s += " (skill sha256 " + f.SkillSHA256 + ")"
+	}
+	return s
 }
 
 // Allow suppresses one rule for one skill, only while the skill's content hash matches.
@@ -62,7 +68,7 @@ func Skill(name string, files tree.Tree, allow []Allow) []Finding {
 			if suppressed(allow, name, hash, r.ID) {
 				continue
 			}
-			out = append(out, Finding{RuleID: r.ID, Severity: r.Severity, Skill: name, Path: h.Path, Line: h.Line, Msg: h.Msg})
+			out = append(out, Finding{RuleID: r.ID, Severity: r.Severity, Skill: name, Path: h.Path, Line: h.Line, Msg: h.Msg, SkillSHA256: hash})
 		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {
